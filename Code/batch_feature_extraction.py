@@ -12,7 +12,8 @@ for ovo in [2]:  # SE overlap
             feat_cls = cls_feature_class.FeatureClass(ov=ovo, split=splito, nfft=nffto, dataset=dataset_name)
 
             # Extract features and normalize them
-            feat_cls.extract_all_feature()
+            #TOLTA ORA
+            #feat_cls.extract_all_feature()
             feat_cls.preprocess_features()
 
             # # Extract labels in regression mode

@@ -322,7 +322,7 @@ class FeatureClass:
         #spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            if 'train' in file_name:
+            if file_cnt <= 10:
                 print(file_cnt, train_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 #spec_scaler.partial_fit(feat_file)
