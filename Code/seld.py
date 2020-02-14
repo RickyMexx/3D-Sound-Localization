@@ -302,9 +302,10 @@ def main(argv):
     print('SED Metrics: ER_overall: {}, F1_overall: {}'.format(sed_loss[best_epoch, 0], sed_loss[best_epoch, 1]))
     print('unique_name: {} '.format(unique_name))
 
-
+'''
 if __name__ == "__main__":
     try:
         sys.exit(main(sys.argv))
     except (ValueError, IOError) as e:
         sys.exit(e)
+'''

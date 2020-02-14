@@ -11,10 +11,13 @@ from keras.engine import InputSpec
 from keras.utils.generic_utils import has_arg
 from .init import qdense_init
 import sys; sys.path.append('.')
-from keras.layers.recurrent import RNN
+#from keras.layers.recurrent import RNN
+
+import tensorflow as tf
+RNN = tf.keras.layers.RNN
 
 # Legacy support.
-from keras.legacy.layers import Recurrent
+#from keras.legacy.layers import Recurrent
 from keras.legacy import interfaces
 
 

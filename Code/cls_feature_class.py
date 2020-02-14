@@ -38,8 +38,8 @@ class FeatureClass:
         # Input directories
         #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
         #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
-        self._aud_dir = os.path.join(self._base_folder, "foa_dev_reduced")
-        self._desc_dir = os.path.join(self._base_folder, "metadata_dev_reduced")
+        self._aud_dir = os.path.join(self._base_folder, "foa_dev")
+        self._desc_dir = os.path.join(self._base_folder, "metadata_dev")
 
         # Output directories
         self._label_dir = None
@@ -327,7 +327,7 @@ class FeatureClass:
         #spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            if file_cnt <= 10:
+            if file_cnt <= 50:
                 print(file_cnt, train_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 #spec_scaler.partial_fit(feat_file)
