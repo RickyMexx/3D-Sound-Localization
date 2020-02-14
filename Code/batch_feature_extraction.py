@@ -3,7 +3,7 @@
 
 import cls_feature_class
 
-dataset_name = 'ansim'  # Datasets: ansim, resim, cansim, cresim and real
+dataset_name = 'foa'  # Datasets: ansim, resim, cansim, cresim and real
 
 # Extracts feature and labels for all overlap and splits
 for ovo in [2]:  # SE overlap

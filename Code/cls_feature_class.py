@@ -36,8 +36,10 @@ class FeatureClass:
         
 
         # Input directories
-        self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
-        self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
+        #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
+        #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
+        self._aud_dir = os.path.join(self._base_folder, "foa_dev")
+        self._desc_dir = os.path.join(self._base_folder, "metadata_dev")
 
         # Output directories
         self._label_dir = None
