@@ -38,8 +38,8 @@ class FeatureClass:
         # Input directories
         #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
         #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
-        self._aud_dir = os.path.join(self._base_folder, "foa_dev")
-        self._desc_dir = os.path.join(self._base_folder, "metadata_dev")
+        self._aud_dir = os.path.join(self._base_folder, "foa_dev_reduced")
+        self._desc_dir = os.path.join(self._base_folder, "metadata_dev_reduced")
 
         # Output directories
         self._label_dir = None
@@ -94,6 +94,7 @@ class FeatureClass:
                     'phone': 3,
                     'speech': 5
                 }
+        
 
         self._fs = 44100
         self._frame_res = self._fs / float(self._hop_len)
@@ -232,7 +233,8 @@ class FeatureClass:
             if 'real' in self._dataset:
                 desc_file['class'].append(split_line[0].split('.')[0].split('-')[1])
             else:
-                desc_file['class'].append(split_line[0].split('.')[0][:-3])
+                #desc_file['class'].append(split_line[0].split('.')[0][:-3])
+                desc_file['class'].append(split_line[0].split('.')[0])
             desc_file['start'].append(int(np.floor(float(split_line[1])*self._frame_res)))
             desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(split_line[3]))
@@ -275,6 +277,9 @@ class FeatureClass:
 
     def _get_se_labels(self, _desc_file):
         se_label = np.zeros((self._max_frames, len(self._unique_classes)))
+
+        print(self._unique_classes)
+
         for i, se_class in enumerate(_desc_file['class']):
             start_frame = _desc_file['start'][i]
             end_frame = self._max_frames if _desc_file['end'][i] > self._max_frames else _desc_file['end'][i]

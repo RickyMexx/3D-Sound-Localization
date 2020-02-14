@@ -14,7 +14,7 @@ for ovo in [2]:  # SE overlap
             # Extract features and normalize them
             #TOLTA ORA
             #feat_cls.extract_all_feature()
-            feat_cls.preprocess_features()
+            #feat_cls.preprocess_features()
 
             # # Extract labels in regression mode
             feat_cls.extract_all_labels('regr', 0)
