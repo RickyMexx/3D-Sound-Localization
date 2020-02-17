@@ -15,7 +15,7 @@ plot.switch_backend('agg')
 
 
 class FeatureClass:
-    def __init__(self, dataset='ansim', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
+    def __init__(self, dataset='foa', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
 
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
@@ -34,12 +34,13 @@ class FeatureClass:
         elif dataset == 'foa':
             self._base_folder = '../Dataset/'
         
-
+        self._TRAIN_SPLIT = 7
         # Input directories
         #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
         #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
-        self._aud_dir = os.path.join(self._base_folder, "foa_dev")
-        self._desc_dir = os.path.join(self._base_folder, "metadata_dev")
+        
+        self._aud_dir = os.path.join(self._base_folder, "foa_dev_reduced")
+        self._desc_dir = os.path.join(self._base_folder, "metadata_dev_reduced")
 
         # Output directories
         self._label_dir = None
@@ -327,7 +328,7 @@ class FeatureClass:
         #spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            if file_cnt <= 50:
+            if file_cnt <= self._TRAIN_SPLIT:
                 print(file_cnt, train_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 #spec_scaler.partial_fit(feat_file)

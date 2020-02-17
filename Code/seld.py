@@ -20,6 +20,7 @@ def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_te
     # Collecting ground truth for test data
     nb_batch = 5 if quick_test else _data_gen_test.get_total_batches_in_data()
 
+    nb_batch = 5
     batch_size = _data_out[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
     gt_doa = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[1][2]))
@@ -30,6 +31,7 @@ def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_te
         gt_sed[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[0]
         gt_doa[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[1]
         cnt = cnt + 1
+        print(cnt)
         if cnt == nb_batch:
             break
     return gt_sed.astype(int), gt_doa
@@ -235,26 +237,35 @@ def main(argv):
             sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
             doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
+            print(len(sed_pred))
+            print(len(doa_pred))
+
+
             sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
+            
+            print(len(sed_loss))
+
             if params['azi_only']:
                 doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
                                                                                                  sed_pred, sed_gt)
             else:
                 doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
                                                                                                   sed_pred, sed_gt)
-
+            print(len(doa_loss))
 #            epoch_metric_loss[epoch_cnt] = np.mean([
 #                sed_loss[epoch_cnt, 0],
 #                1-sed_loss[epoch_cnt, 1],
 #                2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
 #                1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
 #            )
+            print("PRE MEAN")
             sed_score[epoch_cnt] = np.mean([sed_loss[epoch_cnt, 0], 1-sed_loss[epoch_cnt, 1]])
             doa_score[epoch_cnt] = np.mean([2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi, 1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
         
         #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
+        print("PREPLOT")
         plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score)
-
+        print("POSTPLOT")
         patience_cnt += 1
 #        if epoch_metric_loss[epoch_cnt] < best_metric:
 #            best_metric = epoch_metric_loss[epoch_cnt]

@@ -14,6 +14,13 @@ import complexnn
 from   complexnn                             import *
 
 
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
+
 
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
                                 rnn_size, fnn_size, classification_mode, weights):
@@ -39,12 +46,11 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     spec_rnn = Reshape((data_in[-2], -1))(spec_cnn)
     #print(spec_rnn)
     for nb_rnn_filt in rnn_size:
-        spec_rnn = Bidirectional(
-            QuaternionGRU(units=nb_rnn_filt, activation='tanh', dropout=dropout_rate, recurrent_dropout=dropout_rate,
-                return_sequences=True),
-            merge_mode='mul'
-        )(spec_rnn)
+        quaternion =  QuaternionGRU(units=nb_rnn_filt, activation='tanh', dropout=dropout_rate, recurrent_dropout=dropout_rate,
+                return_sequences=True, reset_after=False)
+        spec_rnn = Bidirectional(quaternion, merge_mode='mul')(spec_rnn)
     
+
     doa = spec_rnn
     for nb_fnn_filt in fnn_size:
         doa = TimeDistributed(QuaternionDense(nb_fnn_filt))(doa)

@@ -20,7 +20,7 @@ def get_params(argv):
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length
-        batch_size=10,              # Batch size
+        batch_size=8,              # Batch size
         dropout_rate=0.2,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=32,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer

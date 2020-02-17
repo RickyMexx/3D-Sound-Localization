@@ -84,7 +84,9 @@ class DataGenerator(object):
             if self._datagen_mode in filename:
                 self._filenames_list.append(filename)
             '''
-            if cnt <= 50:
+
+            #----------------------------------------------------------------------------------------------------------------------------------
+            if cnt <= 7:
                 self._filenames_list.append(filename)
                 cnt += 1
 
