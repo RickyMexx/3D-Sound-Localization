@@ -116,7 +116,10 @@ def compute_sed_scores(pred, y, nb_frames_1s):
     f1o = f1_overall_1sec(pred, y, nb_frames_1s)
     ero = er_overall_1sec(pred, y, nb_frames_1s)
     scores = [ero, f1o]
+    print("ero is", ero)
+    print("f1o is", f1o)
     return scores
+
 
 
 def cart2sph(x,y,z):

@@ -96,7 +96,7 @@ def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_te
 #    plot.savefig(fig_name)
 #    plot.close()
 
-def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _sed_score, _doa_score):
+def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _sed_score, _doa_score, _seld_score):
     plot.figure()
     nb_epoch = len(_tr_loss)
     plot.subplot(311)
@@ -120,6 +120,18 @@ def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _sed_sco
     plot.grid(True)
 
     plot.savefig(fig_name)
+    plot.close()
+
+    # New scores plot
+    plot.figure()
+
+    plot.plot(range(nb_epoch), _sed_score, label='sed_score')
+    plot.plot(range(nb_epoch), _doa_score, label='doa_score')
+    plot.plot(range(nb_epoch), _seld_score, label='seld_score')
+    plot.legend()
+    plot.grid(True)
+
+    plot.savefig(fig_name+'_scores')
     plot.close()
 
 
@@ -208,6 +220,7 @@ def main(argv):
     epoch_metric_loss = np.zeros(params['nb_epochs'])
     sed_score=np.zeros(params['nb_epochs'])
     doa_score=np.zeros(params['nb_epochs'])
+    seld_score=np.zeros(params['nb_epochs'])
     tr_loss = np.zeros(params['nb_epochs'])
     val_loss = np.zeros(params['nb_epochs'])
     doa_loss = np.zeros((params['nb_epochs'], 6))
@@ -240,8 +253,7 @@ def main(argv):
             
 
             sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
-            
-            
+
 
             if params['azi_only']:
                 doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
@@ -258,9 +270,10 @@ def main(argv):
 #            )
             sed_score[epoch_cnt] = np.mean([sed_loss[epoch_cnt, 0], 1-sed_loss[epoch_cnt, 1]])
             doa_score[epoch_cnt] = np.mean([2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi, 1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
+            seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt])/2
         
         #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
-        plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score)
+        plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, seld_score)
         patience_cnt += 1
 #        if epoch_metric_loss[epoch_cnt] < best_metric:
 #            best_metric = epoch_metric_loss[epoch_cnt]
@@ -290,12 +303,12 @@ def main(argv):
         print('epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
             'F1_overall: %.2f, ER_overall: %.2f, '
             'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-            'sed_score: %.2f, doa_score: %.2f, best_error_metric: %.2f, best_epoch : %d' %
+            'sed_score: %.2f, doa_score: %.2f, seld_score: %.2f, best_error_metric: %.2f, best_epoch : %d' %
             (
                 epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
                 sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
                 doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-                sed_score[epoch_cnt], doa_score[epoch_cnt], best_metric, best_epoch
+                sed_score[epoch_cnt], doa_score[epoch_cnt], seld_score[epoch_cnt], best_metric, best_epoch
             )
         )
     
