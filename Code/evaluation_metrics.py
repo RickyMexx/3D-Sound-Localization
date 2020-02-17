@@ -76,18 +76,22 @@ def f1_overall_1sec(O, T, block_size):
     for i in range(0, new_size):
         O_block[i,] = np.max(O[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
+        
+
     return f1_overall_framewise(O_block, T_block)
 
 
 def er_overall_1sec(O, T, block_size):
     if len(O.shape) == 3:
         O, T = reshape_3Dto2D(O), reshape_3Dto2D(T)
+ 
     new_size = int(O.shape[0] / (block_size))
     O_block = np.zeros((new_size, O.shape[1]))
     T_block = np.zeros((new_size, O.shape[1]))
     for i in range(0, new_size):
         O_block[i,] = np.max(O[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
+
     return er_overall_framewise(O_block, T_block)
 
 

@@ -17,9 +17,11 @@ from   complexnn                             import *
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
+#Delete if you don't have a GPU
 config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
+####
 
 
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
