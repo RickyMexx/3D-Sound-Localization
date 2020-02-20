@@ -7,7 +7,6 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import scipy.stats
 from IPython import embed
-import scipy.stats as st
 
 
 eps = np.finfo(np.float).eps
@@ -278,13 +277,4 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
     er_metric = [avg_accuracy, doa_loss_gt, doa_loss_pred, doa_loss_gt_cnt, doa_loss_pred_cnt, good_frame_cnt]
     return er_metric, conf_mat
 
-
-def compute_confidence_interval(data, confidence=0.95):
-
-    card = len(data) # Cardinality of the dataset
-    mean = np.mean(data) # Mean value of data
-    sem = st.sem(data) # Standard error of the mean
-    # h = sem * scipy.stats.f.ppf((1+confidence)/2, card-1) # Computing h with Percent point function (inverse of cdf, cumulative density function).
-    # return [mean + h, mean - h]
-    return st.t.interval(confidence, card - 1, loc=mean, scale=sem)
 

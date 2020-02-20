@@ -20,7 +20,6 @@ plot.switch_backend('agg')
 def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
     # Collecting ground truth for test data
     nb_batch = 5 if quick_test else _data_gen_test.get_total_batches_in_data()
-
     
     batch_size = _data_out[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
