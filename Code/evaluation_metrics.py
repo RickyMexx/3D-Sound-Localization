@@ -281,5 +281,5 @@ def compute_confidence_interval(data, confidence=0.95):
     card = len(data) # Cardinality of the dataset
     mean = np.mean(data) # Mean value of data
     sem = scipy.stats.sem(data) # Standard error of the mean
-    h = sem * scipy.stats.t.ppf((1 + confidence) / 2, card - 1) # Computing h with Percent point function (inverse of cdf — percentiles).
+    h = sem * scipy.stats.f.ppf((1+confidence)/2, card-1) # Computing h with Percent point function (inverse of cdf, cumulative density function).
     return [mean + h, mean - h]

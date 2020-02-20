@@ -97,7 +97,7 @@ class FeatureClass:
                 }
         
 
-        self._fs = 44100
+        self._fs = 48000 #44100 # New frequency is 48k
         self._frame_res = self._fs / float(self._hop_len)
         self._hop_len_s = self._nfft/2.0/self._fs
         self._nb_frames_1s = int(1 / self._hop_len_s)

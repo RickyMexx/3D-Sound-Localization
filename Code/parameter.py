@@ -28,7 +28,7 @@ def get_params(argv):
         fnn_size=[32],             # FNN contents, length of list = number of layers, list value = number of nodes
         loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
-        nb_epochs=1000,             # Train for maximum epochs
+        nb_epochs=10,             # Train for maximum epochs
 
         # Not important
         mode='regr',        # Only regression ('regr') supported as of now
