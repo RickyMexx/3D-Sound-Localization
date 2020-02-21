@@ -9,6 +9,7 @@ def get_params(argv):
     # ########### default parameters ##############
     params = dict(
         quick_test=True,    # To do quick test. Trains/test on small subset of dataset
+        quick_test_dim=15,
         azi_only=True,      # Estimate Azimuth only
 
         # Dataset loading parameters

@@ -66,6 +66,7 @@ class DataGenerator(object):
             )
         )
 
+
     def get_data_sizes(self):
         feat_shape = (self._batch_size, self._2_nb_ch, self._seq_len, self._feat_len)
         label_shape = [

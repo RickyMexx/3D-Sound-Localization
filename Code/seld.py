@@ -17,9 +17,9 @@ plot.switch_backend('agg')
 
 
 
-def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
+def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test, quick_test_dim):
     # Collecting ground truth for test data
-    nb_batch = 5 if quick_test else _data_gen_test.get_total_batches_in_data()
+    nb_batch = quick_test_dim if quick_test else _data_gen_test.get_total_batches_in_data()
     
     batch_size = _data_out[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
@@ -193,7 +193,7 @@ def main(argv):
         )
     )
 
-    gt = collect_test_labels(data_gen_test, data_out, params['mode'], params['quick_test'])
+    gt = collect_test_labels(data_gen_test, data_out, params['mode'], params['quick_test'], params['quick_test_dim'])
     sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
     doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
@@ -229,9 +229,9 @@ def main(argv):
         start = time.time()
         hist = model.fit_generator(
             generator=data_gen_train.generate(),
-            steps_per_epoch=5 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
+            steps_per_epoch=params['quick_test_dim'] if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
             validation_data=data_gen_test.generate(),
-            validation_steps=5 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+            validation_steps=params['quick_test_dim'] if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             use_multiprocessing=False,
             epochs=1,
             verbose=1
@@ -241,7 +241,7 @@ def main(argv):
 
         pred = model.predict_generator(
             generator=data_gen_test.generate(),
-            steps=5 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+            steps=params['quick_test_dim'] if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             use_multiprocessing=False,
             verbose=2
         )
