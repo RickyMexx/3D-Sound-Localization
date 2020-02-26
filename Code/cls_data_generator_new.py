@@ -82,6 +82,7 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_filenames_list_and_feat_label_sizes(self):
+        print(self._feat_dir)
         for filename in os.listdir(self._feat_dir):
             if int(filename[5]) in self._splits: # check which split the file belongs to
                 self._filenames_list.append(filename)

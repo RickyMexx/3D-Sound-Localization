@@ -157,13 +157,13 @@ def main(argv):
         print('Loading training dataset:')
         data_gen_train = cls_data_generator.DataGenerator(
                 dataset=params['dataset'], split=train_splits[split_cnt], batch_size=params['batch_size'],
-                seq_len=params['sequence_length'] #, feat_label_dir=params['feat_label_dir']
+                seq_len=params['sequence_length'], feat_label_dir=params['feat_label_dir']
             )
 
         print('Loading validation dataset:')
         data_gen_test = cls_data_generator.DataGenerator(
                 dataset=params['dataset'], split=test_splits[split_cnt], batch_size=params['batch_size'],
-                seq_len=params['sequence_length'], shuffle=False #, feat_label_dir=params['feat_label_dir']
+                seq_len=params['sequence_length'], shuffle=False, feat_label_dir=params['feat_label_dir']
             )
 
         ###############
