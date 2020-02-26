@@ -228,6 +228,8 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
             good_frame_cnt = good_frame_cnt + 1
 
         # DOA Loss with respect to groundtruth
+
+
         doa_frame_gt_x = gt[frame_cnt][:nb_sed][sed_frame == 1]
         doa_frame_gt_y = gt[frame_cnt][nb_sed:2*nb_sed][sed_frame == 1]
         doa_frame_gt_z = gt[frame_cnt][2*nb_sed:][sed_frame == 1]

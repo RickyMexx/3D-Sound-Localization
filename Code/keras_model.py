@@ -27,7 +27,8 @@ session = InteractiveSession(config=config)
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
                                 rnn_size, fnn_size, classification_mode, weights):
     # model definition
-    spec_start = Input(shape=(data_in[-2], data_in[-1], data_in[-3]))
+    #TODO: -3 -2 -1?
+    spec_start = Input(shape=(data_in[-3], data_in[-2], data_in[-1]))
     print("start input:", spec_start)
     spec_cnn = spec_start
     for i, convCnt in enumerate(pool_size):

@@ -34,13 +34,13 @@ class FeatureClass:
         elif dataset == 'foa':
             self._base_folder = '../Dataset/'
         
-        self._TRAIN_SPLIT = 7
+        self._TRAIN_SPLIT = 150
         # Input directories
         #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
         #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
         
-        self._aud_dir = os.path.join(self._base_folder, "foa_dev_reduced")
-        self._desc_dir = os.path.join(self._base_folder, "metadata_dev_reduced")
+        self._aud_dir = os.path.join(self._base_folder, "foa_dev/wav_ov{}_split{}".format(ov, split))
+        self._desc_dir = os.path.join(self._base_folder, "metadata_dev/desc_ov{}_split{}".format(ov, split))
 
         # Output directories
         self._label_dir = None
@@ -141,38 +141,7 @@ class FeatureClass:
     @staticmethod
     def _next_greater_power_of_2(x):
         return 2 ** (x - 1).bit_length()
-    
-#    #Qfft taken from https://github.com/jflamant/bispy/tree/master/bispy
-#    def sympSplit(self, q):
-#        #Splits a quaternion array into two complex arrays.
-#        #The decomposition reads: q = q_1 + i q_2 where q_1, q_2 are complex (1, 1j) numpy arrays
-#
-#        q_1 = q[..., 0] + 1j * q[..., 3]
-#        q_2 = q[..., 0] + 1j * q[..., 2]
-#    
-#        return q_1, q_2
-#    
-#    def sympSynth(self, q_1, q_2):
-#        #correct dimension of float array (shape(q_1), 4)
-#        dimArray = list(q_1.shape)
-#        dimArray.append(4)
-#        qfloat = np.zeros(tuple(dimArray))
-#        qfloat[..., 0] = np.real(q_1)
-#        qfloat[..., 1] = np.real(q_2)
-#        qfloat[..., 2] = np.imag(q_1)
-#        qfloat[..., 3] = np.imag(q_2)
-#        
-#        return qfloat 
-#        #return quaternion.as_quat_array(qfloat)
-#    
-#    def Qfft(self, x, **kwargs):
-#        x_1, x_2 = self.sympSplit(np.ascontiguousarray(x))
-#        X_1 = np.fft.fft(x_1, **kwargs)
-#        X_2 = np.fft.fft(x_2, **kwargs)
-#        X = self.sympSynth(X_1, X_2)
-#        
-#        return X
-#        
+           
     def _spectrogram(self, audio_input):
         _nb_ch = audio_input.shape[1]
         hann_win = np.repeat(np.hanning(self._win_len)[np.newaxis].T, _nb_ch, 1)
@@ -328,7 +297,8 @@ class FeatureClass:
         #spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            if file_cnt <= self._TRAIN_SPLIT:
+            #if file_cnt <= self._TRAIN_SPLIT:
+            if 'train' in file_name:
                 print(file_cnt, train_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 #spec_scaler.partial_fit(feat_file)
@@ -417,11 +387,15 @@ class FeatureClass:
             'spec_ov{}_split{}_{}db_nfft{}{}'.format(self._ov, self._split, self._db, self._nfft, extra)
         )
 
+    
     def get_label_dir(self, mode, weakness, extra=''):
         return os.path.join(
             self._base_folder,
             'label_ov{}_split{}_nfft{}_{}{}{}'.format(self._ov, self._split, self._nfft, mode, 0 if mode is 'regr' else weakness, extra)
         )
+    
+
+
 
     def get_normalized_wts_file(self, extra=''):
         return os.path.join(

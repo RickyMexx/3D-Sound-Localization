@@ -22,7 +22,8 @@ class DataGenerator(object):
         self._seq_len = seq_len
         self._shuffle = shuffle
         self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
-        self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
+        #self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
+        self._label_dir = self._feat_cls.get_label_dir()
         self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
@@ -79,17 +80,18 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_label_filenames_sizes(self):
-        cnt = 0
+        
         for filename in os.listdir(self._label_dir):
-            '''
             if self._datagen_mode in filename:
                 self._filenames_list.append(filename)
-            '''
+            
 
             #----------------------------------------------------------------------------------------------------------------------------------
-            if cnt <= 7:
+            '''
+            if cnt <= 150:
                 self._filenames_list.append(filename)
                 cnt += 1
+            '''
 
         print(self._filenames_list)
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))

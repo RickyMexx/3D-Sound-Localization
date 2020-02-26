@@ -9,8 +9,10 @@ def get_params(argv):
     # ########### default parameters ##############
     params = dict(
         quick_test=True,    # To do quick test. Trains/test on small subset of dataset
-        quick_test_dim=15,
-        azi_only=True,      # Estimate Azimuth only
+        quick_test_dim=5,
+        azi_only=False,     
+
+        feat_label_dir='/home/bebbo203/Scrivania/seld-dcase2019/Dataset/feat_label_tmp/',
 
         # Dataset loading parameters
         dataset='foa',    # Dataset to use: ansim, resim, cansim, cresim, real
@@ -19,8 +21,13 @@ def get_params(argv):
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
 
+        
+
+        
+
         # DNN Model parameters
-        sequence_length=512,        # Feature sequence length
+        #sequence_length=512,        # Feature sequence length
+        sequence_length=128,
         batch_size=8,              # Batch size
         dropout_rate=0.2,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=32,           # Number of CNN nodes, constant for each layer
