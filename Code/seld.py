@@ -43,6 +43,8 @@ def collect_test_labels(_data_gen_test, _data_out, quick_test, quick_test_dim):
 
     batch_size = _data_out[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
+
+    ######### Qui dovrei avere l'ultima dimensione a 33
     gt_doa = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[1][2]))
 
     print("nb_batch in test: {}".format(nb_batch))
@@ -50,6 +52,7 @@ def collect_test_labels(_data_gen_test, _data_out, quick_test, quick_test_dim):
     for tmp_feat, tmp_label in _data_gen_test.generate():
         gt_sed[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[0]
         gt_doa[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[1]
+        
         cnt = cnt + 1
         print(cnt)
         if cnt == nb_batch:
@@ -258,7 +261,7 @@ def main(argv):
                 else:
                     doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
                                                                                                     sed_pred, sed_gt)
-                print(len(doa_loss))
+                
     #            epoch_metric_loss[epoch_cnt] = np.mean([
     #                sed_loss[epoch_cnt, 0],
     #                1-sed_loss[epoch_cnt, 1],

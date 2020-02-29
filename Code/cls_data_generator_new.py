@@ -8,6 +8,7 @@ import cls_feature_class_new as cls_feature_class
 from IPython import embed
 from collections import deque
 import random
+import parameter
 
 
 class DataGenerator(object):
@@ -39,7 +40,10 @@ class DataGenerator(object):
         self._batch_seq_len = self._batch_size*self._seq_len
         self._circ_buf_feat = None
         self._circ_buf_label = None
-
+        #####
+        self._azi_only = parameter.get_params('1')['azi_only']
+        self._xyz_def_zero = parameter.get_params('1')['xyz_def_zero']
+        #####
         if self._per_file:
             self._nb_total_batches = len(self._filenames_list)
         else:
@@ -74,7 +78,8 @@ class DataGenerator(object):
         else:
             label_shape = [
                 (self._batch_size, self._seq_len, self._nb_classes),
-                (self._batch_size, self._seq_len, self._nb_classes*2)
+                #Qui io ho messo 3 assumendo che sia 3D
+                (self._batch_size, self._seq_len, self._nb_classes*2 if self._azi_only else self._nb_classes*3)
             ]
         return feat_shape, label_shape
 
@@ -190,6 +195,11 @@ class DataGenerator(object):
                     feat = np.transpose(feat, (0, 3, 1, 2))
                     label = self._split_in_seqs(label)
 
+                    
+
+
+                    '''
+
                     # Get azi/ele in radians
                     azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
                     # ele_rad = label[:, :, 2 * self._nb_classes:] * np.pi / 180
@@ -204,6 +214,50 @@ class DataGenerator(object):
                         label[:, :, :self._nb_classes],  # SED labels
                         np.concatenate((azi_rad, ele_rad), -1)  # DOA labels in radians
                          ]
+
+                    yield feat, label
+
+                    '''
+
+                    #Mio tentativo di risoluzione
+
+                    if self._azi_only:
+                    # Get Cartesian coordinates from azi/ele
+                        azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
+                        x = np.cos(azi_rad)
+                        y = np.sin(azi_rad)
+
+                        # Set default Cartesian x,y,z coordinates to 0,0,0
+                        if self._xyz_def_zero:
+                            no_ele_ind = np.where(label[:, :, 2 * self._nb_classes:] == self._default_ele)
+                            x[no_ele_ind] = 0
+                            y[no_ele_ind] = 0
+
+                        label = [
+                            label[:, :, :self._nb_classes],  # SED labels
+                            np.concatenate((x, y), -1)       # DOA Cartesian labels
+                        ]
+                    else:
+                        # Get Cartesian coordinates from azi/ele
+                        azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
+                        ele_rad = label[:, :, 2 * self._nb_classes:] * np.pi / 180
+                        tmp_label = np.cos(ele_rad)
+
+                        x = np.cos(azi_rad) * tmp_label
+                        y = np.sin(azi_rad) * tmp_label
+                        z = np.sin(ele_rad)
+
+                        # Set default Cartesian x,y,z coordinates to 0,0,0
+                        if self._xyz_def_zero:
+                            no_ele_ind = np.where(label[:, :, 2 * self._nb_classes:] == self._default_ele)
+                            x[no_ele_ind] = 0
+                            z[no_ele_ind] = 0
+                            y[no_ele_ind] = 0
+
+                        label = [
+                            label[:, :, :self._nb_classes],  # SED labels
+                            np.concatenate((x, y, z), -1)    # DOA Cartesian labels
+                            ]
 
                     yield feat, label
 
