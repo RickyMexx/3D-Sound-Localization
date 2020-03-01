@@ -16,6 +16,49 @@ from IPython import embed
 plot.switch_backend('agg')
 
 
+# bootstrap confidence intervals
+from numpy.random import seed
+from numpy.random import rand
+from numpy.random import randint
+from numpy import mean
+me
+from numpy import percentile
+
+# seed the random number generator
+seed(1)
+
+def compute_confidence(data):
+    # bootstrap
+    length = len(data)
+    scores = list()
+    for _ in range(100):
+        # bootstrap sample
+        indices = randint(0, length, length)
+        sample = data[indices]
+        # calculate and store statistic
+        statistic = mean(sample)
+        scores.append(statistic)
+
+    # calculate 95% confidence intervals (100 - alpha)
+    alpha = 5.0
+
+    # calculate lower percentile (e.g. 2.5)
+    lower_p = alpha / 2.0
+    # retrieve observation at lower percentile
+    lower = max(0.0, percentile(scores, lower_p))
+
+    # calculate upper percentile (e.g. 97.5)
+    upper_p = (100 - alpha) + (alpha / 2.0)
+    # retrieve observation at upper percentile
+    upper = min(1.0, percentile(scores, upper_p))
+
+    #print('median=%.3f' % median(scores))
+    #print('%.1fth percentile = %.3f' % (lower_p, lower))
+    #print('%.1fth percentile = %.3f' % (upper_p, upper))
+
+    return [lower, upper, median(scores)]
+
+
 
 def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test, quick_test_dim):
     # Collecting ground truth for test data
@@ -250,10 +293,20 @@ def main(argv):
             sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
             doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
-            
+            ''' Computing confidence intervals '''
+            sed_err = sed_gt - sed_pred
+            [sed_conf_low, sed_conf_up, sed_median] = compute_confidence(sed_err)
+            print("Condidence Interval for SED error is ["+str(sed_conf_low)+", "+str(sed_conf_up)+"]")
+            print("Median is "+str(sed_median))
+            print("Displacement: +/- "+str(sed_conf_up - sed_median))
+            doa_err = doa_gt - doa_pred
+            [doa_conf_low, doa_conf_up, doa_median] = compute_confidence(doa_err)
+            print("Condidence Interval for DOA is ["+str(doa_conf_low)+", "+str(doa_conf_up)+"]")
+            print("Median is "+str(doa_median))
+            print("Displacement: +/- "+str(doa_conf_up - doa_median))
+            ''' ------------------------------ '''
 
             sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
-
 
             if params['azi_only']:
                 doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
