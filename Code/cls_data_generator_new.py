@@ -4,6 +4,7 @@
 
 import os
 import numpy as np
+#CNG: Added _new to import
 import cls_feature_class_new as cls_feature_class
 from IPython import embed
 from collections import deque
@@ -40,6 +41,7 @@ class DataGenerator(object):
         self._batch_seq_len = self._batch_size*self._seq_len
         self._circ_buf_feat = None
         self._circ_buf_label = None
+        #CNG: Added two parameters taken from parameter.py
         #####
         self._azi_only = parameter.get_params('1')['azi_only']
         self._xyz_def_zero = parameter.get_params('1')['xyz_def_zero']
@@ -79,6 +81,7 @@ class DataGenerator(object):
             label_shape = [
                 (self._batch_size, self._seq_len, self._nb_classes),
                 #Qui io ho messo 3 assumendo che sia 3D
+                #CNG: Added *3 because the original code was constrained on 2D
                 (self._batch_size, self._seq_len, self._nb_classes*2 if self._azi_only else self._nb_classes*3)
             ]
         return feat_shape, label_shape
@@ -195,8 +198,8 @@ class DataGenerator(object):
                     feat = np.transpose(feat, (0, 3, 1, 2))
                     label = self._split_in_seqs(label)
 
-                    
-
+                    #CNG: ?
+                    #TODO: maybe here is better to directly use spherical coordinates
 
                     '''
 
@@ -220,7 +223,9 @@ class DataGenerator(object):
                     '''
 
                     #Mio tentativo di risoluzione
+                    #CNG: Code from the professor repo: we are converting to cartesian 
 
+                    ##########
                     if self._azi_only:
                     # Get Cartesian coordinates from azi/ele
                         azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
@@ -260,6 +265,7 @@ class DataGenerator(object):
                             ]
 
                     yield feat, label
+                    ##########
 
     def _split_in_seqs(self, data):
         if len(data.shape) == 1:
