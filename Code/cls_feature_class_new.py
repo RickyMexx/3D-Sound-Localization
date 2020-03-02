@@ -106,6 +106,9 @@ class FeatureClass:
     def _next_greater_power_of_2(x):
         return 2 ** (x - 1).bit_length()
 
+
+    #Questa funzione ha delle differenze.
+
     def _spectrogram(self, audio_input):
         _nb_ch = audio_input.shape[1]
         nb_bins = self._nfft // 2
@@ -143,7 +146,7 @@ class FeatureClass:
                 desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(split_line[3]))
             desc_file['azi'].append(int(split_line[4]))
-            desc_file['dist'].append(int(split_line[5]))
+            desc_file['dist'].append(float(split_line[5]))
         fid.close()
         return desc_file
 

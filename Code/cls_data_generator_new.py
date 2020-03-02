@@ -201,32 +201,35 @@ class DataGenerator(object):
                     #CNG: ?
                     #TODO: maybe here is better to directly use spherical coordinates
 
-                    '''
+                    
 
                     # Get azi/ele in radians
                     azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
-                    # ele_rad = label[:, :, 2 * self._nb_classes:] * np.pi / 180
-
                     # rescaling the elevation data from [-def_elevation def_elevation] to [-180 180] to keep them in the
                     # range of azimuth angle
                     ele_rad = label[:, :, 2 * self._nb_classes:] * np.pi / self._default_ele
+
+                    
+                    #TODO: need to add distance                    
+                    
+
 
 
                     #QUIIII CI STA IL PROBLEMAAAA
                     label = [
                         label[:, :, :self._nb_classes],  # SED labels
-                        np.concatenate((azi_rad, ele_rad), -1)  # DOA labels in radians
+                        np.concatenate((azi_rad, ele_rad, ), -1)  # DOA labels in radians
                          ]
 
                     yield feat, label
 
-                    '''
+                    
 
                     #Mio tentativo di risoluzione
                     #CNG: Code from the professor repo: we are converting to cartesian 
 
                     ##########
-                    if self._azi_only:
+                    '''if self._azi_only:
                     # Get Cartesian coordinates from azi/ele
                         azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
                         x = np.cos(azi_rad)
@@ -264,7 +267,7 @@ class DataGenerator(object):
                             np.concatenate((x, y, z), -1)    # DOA Cartesian labels
                             ]
 
-                    yield feat, label
+                    yield feat, label'''
                     ##########
 
     def _split_in_seqs(self, data):
