@@ -173,6 +173,7 @@ class FeatureClass:
                     (ele_ang >= self._ele_list[0]) & (ele_ang <= self._ele_list[-1]):
                 azi_label[start_frame:end_frame + 1, class_ind] = azi_ang
                 ele_label[start_frame:end_frame + 1, class_ind] = ele_ang
+
             else:
                 print('bad_angle {} {}'.format(azi_ang, ele_ang))
         doa_label_regr = np.concatenate((azi_label, ele_label), axis=1)

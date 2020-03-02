@@ -82,7 +82,8 @@ class DataGenerator(object):
                 (self._batch_size, self._seq_len, self._nb_classes),
                 #Qui io ho messo 3 assumendo che sia 3D
                 #CNG: Added *3 because the original code was constrained on 2D
-                (self._batch_size, self._seq_len, self._nb_classes*2 if self._azi_only else self._nb_classes*3)
+                #(self._batch_size, self._seq_len, self._nb_classes*2 if self._azi_only else self._nb_classes*3)
+                (self._batch_size, self._seq_len, self._nb_classes*2 )
             ]
         return feat_shape, label_shape
 

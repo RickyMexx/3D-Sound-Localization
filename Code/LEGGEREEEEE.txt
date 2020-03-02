@@ -1,0 +1,4 @@
+Allora ho sistemato il programma riportando tutto ad azi/ele il problema è che ho dovuto usare le metriche (sempre su coordinate sferiche) della repo nuova.
+La differenza sta nel fatto che il valore ritornato da evaluation_metrics.compute_doa_scores_regr è una tupla completamente differente rispetto a quello che 
+ritorna il programma del professore.
+È quindi necessario sistemare seld.py affinché non abbia "too many values to unpack" perché penso che il problema derivi proprio da questo
