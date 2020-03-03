@@ -7,6 +7,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import scipy.stats
 from IPython import embed
+from scipy.optimize import linear_sum_assignment
+
 
 
 eps = np.finfo(np.float).eps
@@ -279,65 +281,121 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
 
 
     #To be used in future
-    def compute_doa_scores_regr(pred_doa_rad, gt_doa_rad, pred_sed, gt_sed):
-        """
-            Compute DOA metrics when DOA is estimated using regression approach
+def distance_between_gt_pred(gt_list_rad, pred_list_rad):
+    """
+    Shortest distance between two sets of spherical coordinates. Given a set of groundtruth spherical coordinates,
+     and its respective predicted coordinates, we calculate the spherical distance between each of the spherical
+     coordinate pairs resulting in a matrix of distances, where one axis represents the number of groundtruth
+     coordinates and the other the predicted coordinates. The number of estimated peaks need not be the same as in
+     groundtruth, thus the distance matrix is not always a square matrix. We use the hungarian algorithm to find the
+     least cost in this distance matrix.
 
-        :param pred_doa_rad: predicted doa_labels is of dimension [nb_frames, 2*nb_classes],
-                            nb_classes each for azimuth and elevation angles,
-                            if active, the DOA values will be in RADIANS, else, it will contain default doa values
-        :param gt_doa_rad: reference doa_labels is of dimension [nb_frames, 2*nb_classes],
+    :param gt_list_rad: list of ground-truth spherical coordinates
+    :param pred_list_rad: list of predicted spherical coordinates
+    :return: cost -  distance
+    :return: less - number of DOA's missed
+    :return: extra - number of DOA's over-estimated
+    """
+
+    gt_len, pred_len = gt_list_rad.shape[0], pred_list_rad.shape[0]
+    ind_pairs = np.array([[x, y] for y in range(pred_len) for x in range(gt_len)])
+    cost_mat = np.zeros((gt_len, pred_len))
+
+    # Slow implementation
+    # cost_mat = np.zeros((gt_len, pred_len))
+    # for gt_cnt, gt in enumerate(gt_list_rad):
+    #     for pred_cnt, pred in enumerate(pred_list_rad):
+    #         cost_mat[gt_cnt, pred_cnt] = distance_between_spherical_coordinates_rad(gt, pred)
+
+    # Fast implementation
+    if gt_len and pred_len:
+        az1, ele1, az2, ele2 = gt_list_rad[ind_pairs[:, 0], 0], gt_list_rad[ind_pairs[:, 0], 1], \
+                               pred_list_rad[ind_pairs[:, 1], 0], pred_list_rad[ind_pairs[:, 1], 1]
+        cost_mat[ind_pairs[:, 0], ind_pairs[:, 1]] = distance_between_spherical_coordinates_rad(az1, ele1, az2, ele2)
+
+    row_ind, col_ind = linear_sum_assignment(cost_mat)
+    cost = cost_mat[row_ind, col_ind].sum()
+    return cost
+
+
+def distance_between_spherical_coordinates_rad(az1, ele1, az2, ele2):
+    """
+    Angular distance between two spherical coordinates
+    MORE: https://en.wikipedia.org/wiki/Great-circle_distance
+
+    :return: angular distance in degrees
+    """
+    dist = np.sin(ele1) * np.sin(ele2) + np.cos(ele1) * np.cos(ele2) * np.cos(np.abs(az1 - az2))
+    # Making sure the dist values are in -1 to 1 range, else np.arccos kills the job
+    dist = np.clip(dist, -1, 1)
+    dist = np.arccos(dist) * 180 / np.pi
+    return dist
+
+
+
+def compute_doa_scores_regr(pred_doa_rad, gt_doa_rad, pred_sed, gt_sed):
+    """
+        Compute DOA metrics when DOA is estimated using regression approach
+
+    :param pred_doa_rad: predicted doa_labels is of dimension [nb_frames, 2*nb_classes],
                         nb_classes each for azimuth and elevation angles,
                         if active, the DOA values will be in RADIANS, else, it will contain default doa values
-        :param pred_sed: predicted sed label of dimension [nb_frames, nb_classes] which is 1 for active sound event else zero
-        :param gt_sed: reference sed label of dimension [nb_frames, nb_classes] which is 1 for active sound event else zero
-        :return:
-        """
+    :param gt_doa_rad: reference doa_labels is of dimension [nb_frames, 2*nb_classes],
+                    nb_classes each for azimuth and elevation angles,
+                    if active, the DOA values will be in RADIANS, else, it will contain default doa values
+    :param pred_sed: predicted sed label of dimension [nb_frames, nb_classes] which is 1 for active sound event else zero
+    :param gt_sed: reference sed label of dimension [nb_frames, nb_classes] which is 1 for active sound event else zero
+    :return:
+    """
 
-        nb_src_gt_list = np.zeros(gt_doa_rad.shape[0]).astype(int)
-        nb_src_pred_list = np.zeros(gt_doa_rad.shape[0]).astype(int)
-        good_frame_cnt = 0
-        doa_loss_pred = 0.0
-        nb_sed = gt_sed.shape[-1]
+    nb_src_gt_list = np.zeros(gt_doa_rad.shape[0]).astype(int)
+    nb_src_pred_list = np.zeros(gt_doa_rad.shape[0]).astype(int)
+    good_frame_cnt = 0
+    doa_loss_pred = 0.0
+    nb_sed = gt_sed.shape[-1]
 
-        less_est_cnt, less_est_frame_cnt = 0, 0
-        more_est_cnt, more_est_frame_cnt = 0, 0
+    less_est_cnt, less_est_frame_cnt = 0, 0
+    more_est_cnt, more_est_frame_cnt = 0, 0
 
-        for frame_cnt, sed_frame in enumerate(gt_sed):
-            nb_src_gt_list[frame_cnt] = int(np.sum(sed_frame))
-            nb_src_pred_list[frame_cnt] = int(np.sum(pred_sed[frame_cnt]))
+    for frame_cnt, sed_frame in enumerate(gt_sed):
+        nb_src_gt_list[frame_cnt] = int(np.sum(sed_frame))
+        nb_src_pred_list[frame_cnt] = int(np.sum(pred_sed[frame_cnt]))
 
-            # good_frame_cnt includes frames where the nb active sources were zero in both groundtruth and prediction
-            if nb_src_gt_list[frame_cnt] == nb_src_pred_list[frame_cnt]:
-                good_frame_cnt = good_frame_cnt + 1
-            elif nb_src_gt_list[frame_cnt] > nb_src_pred_list[frame_cnt]:
-                less_est_cnt = less_est_cnt + nb_src_gt_list[frame_cnt] - nb_src_pred_list[frame_cnt]
-                less_est_frame_cnt = less_est_frame_cnt + 1
-            elif nb_src_gt_list[frame_cnt] < nb_src_pred_list[frame_cnt]:
-                more_est_cnt = more_est_cnt + nb_src_pred_list[frame_cnt] - nb_src_gt_list[frame_cnt]
-                more_est_frame_cnt = more_est_frame_cnt + 1
+        # good_frame_cnt includes frames where the nb active sources were zero in both groundtruth and prediction
+        if nb_src_gt_list[frame_cnt] == nb_src_pred_list[frame_cnt]:
+            good_frame_cnt = good_frame_cnt + 1
+        elif nb_src_gt_list[frame_cnt] > nb_src_pred_list[frame_cnt]:
+            less_est_cnt = less_est_cnt + nb_src_gt_list[frame_cnt] - nb_src_pred_list[frame_cnt]
+            less_est_frame_cnt = less_est_frame_cnt + 1
+        elif nb_src_gt_list[frame_cnt] < nb_src_pred_list[frame_cnt]:
+            more_est_cnt = more_est_cnt + nb_src_pred_list[frame_cnt] - nb_src_gt_list[frame_cnt]
+            more_est_frame_cnt = more_est_frame_cnt + 1
 
-            # when nb_ref_doa > nb_estimated_doa, ignores the extra ref doas and scores only the nearest matching doas
-            # similarly, when nb_estimated_doa > nb_ref_doa, ignores the extra estimated doa and scores the remaining matching doas
-            if nb_src_gt_list[frame_cnt] and nb_src_pred_list[frame_cnt]:
-                # DOA Loss with respect to predicted confidence
-                sed_frame_gt = gt_sed[frame_cnt]
-                doa_frame_gt_azi = gt_doa_rad[frame_cnt][:nb_sed][sed_frame_gt == 1]
-                doa_frame_gt_ele = gt_doa_rad[frame_cnt][nb_sed:][sed_frame_gt == 1]
+        # when nb_ref_doa > nb_estimated_doa, ignores the extra ref doas and scores only the nearest matching doas
+        # similarly, when nb_estimated_doa > nb_ref_doa, ignores the extra estimated doa and scores the remaining matching doas
+        if nb_src_gt_list[frame_cnt] and nb_src_pred_list[frame_cnt]:
+            # DOA Loss with respect to predicted confidence
+            sed_frame_gt = gt_sed[frame_cnt]
+            doa_frame_gt_azi = gt_doa_rad[frame_cnt][:nb_sed][sed_frame_gt == 1]
+            doa_frame_gt_ele = gt_doa_rad[frame_cnt][nb_sed:][sed_frame_gt == 1]
 
-                sed_frame_pred = pred_sed[frame_cnt]
-                doa_frame_pred_azi = pred_doa_rad[frame_cnt][:nb_sed][sed_frame_pred == 1]
-                doa_frame_pred_ele = pred_doa_rad[frame_cnt][nb_sed:][sed_frame_pred == 1]
+            sed_frame_pred = pred_sed[frame_cnt]
+            doa_frame_pred_azi = pred_doa_rad[frame_cnt][:nb_sed][sed_frame_pred == 1]
+            doa_frame_pred_ele = pred_doa_rad[frame_cnt][nb_sed:][sed_frame_pred == 1]
 
-                doa_loss_pred += distance_between_gt_pred(np.vstack((doa_frame_gt_azi, doa_frame_gt_ele)).T,
-                                                        np.vstack((doa_frame_pred_azi, doa_frame_pred_ele)).T)
+            doa_loss_pred += distance_between_gt_pred(np.vstack((doa_frame_gt_azi, doa_frame_gt_ele)).T,
+                                                    np.vstack((doa_frame_pred_azi, doa_frame_pred_ele)).T)
 
-        doa_loss_pred_cnt = np.sum(nb_src_pred_list)
-        if doa_loss_pred_cnt:
-            doa_loss_pred /= doa_loss_pred_cnt
+    doa_loss_pred_cnt = np.sum(nb_src_pred_list)
+    if doa_loss_pred_cnt:
+        doa_loss_pred /= doa_loss_pred_cnt
 
-        frame_recall = good_frame_cnt / float(gt_sed.shape[0])
-        er_metric = [doa_loss_pred, frame_recall, doa_loss_pred_cnt, good_frame_cnt, more_est_cnt, less_est_cnt]
-        return er_metric
+    frame_recall = good_frame_cnt / float(gt_sed.shape[0])
+
+    conf_mat = confusion_matrix(nb_src_gt_list, nb_src_pred_list)
+    conf_mat = conf_mat / (eps + np.sum(conf_mat, 1)[:, None].astype('float'))
+
+    er_metric = [doa_loss_pred, frame_recall, doa_loss_pred_cnt, good_frame_cnt, more_est_cnt, less_est_cnt]
+    return er_metric, conf_mat
 
 

@@ -44,7 +44,7 @@ def collect_test_labels(_data_gen_test, _data_out, quick_test, quick_test_dim):
     batch_size = _data_out[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
 
-    ######### Qui dovrei avere l'ultima dimensione a 33
+    ######### Qui dovrei avere l'ultima dimensione a 33 MA CHE STAI A DI' ROBBE'
     gt_doa = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[1][2]))
 
     print("nb_batch in test: {}".format(nb_batch))
@@ -249,8 +249,6 @@ def main(argv):
                 sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
                 doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
                 print("doa_pred:", doa_pred.shape)
-                #Added for eval purpose
-                #doa_pred[:, nb_classes:] = doa_pred[:, nb_classes:] / (180. / def_elevation)
 
                 sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
 
@@ -259,28 +257,19 @@ def main(argv):
                     doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
                                                                                                     sed_pred, sed_gt)
                 else:
-                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
+                    #Added a new function, this is without xyz
+                    #Need to remove conf mat as for now, maybe later will add it
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr(doa_pred, doa_gt,
                                                                                                     sed_pred, sed_gt)
-                
-    #            epoch_metric_loss[epoch_cnt] = np.mean([
-    #                sed_loss[epoch_cnt, 0],
-    #                1-sed_loss[epoch_cnt, 1],
-    #                2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
-    #                1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
-    #            )
+                   
+     
                 sed_score[epoch_cnt] = np.mean([sed_loss[epoch_cnt, 0], 1-sed_loss[epoch_cnt, 1]])
                 doa_score[epoch_cnt] = np.mean([2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi, 1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
                 seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt])/2
             
-            #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
             plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, seld_score)
             patience_cnt += 1
-    #        if epoch_metric_loss[epoch_cnt] < best_metric:
-    #            best_metric = epoch_metric_loss[epoch_cnt]
-    #            best_conf_mat = conf_mat
-    #            best_epoch = epoch_cnt
-    #            model.save('{}_model.h5'.format(unique_name))
-    #            patience_cnt = 0
+
             if sed_score[epoch_cnt] < best_metric:
                 best_metric = sed_score[epoch_cnt]
                 best_conf_mat = conf_mat
@@ -288,18 +277,7 @@ def main(argv):
                 model.save('{}_model.h5'.format(unique_name))
                 patience_cnt = 0
                 
-    #        print(
-    #            'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
-    #            'F1_overall: %.2f, ER_overall: %.2f, '
-    #            'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-    #            'error_metric: %.2f, best_error_metric: %.2f, best_epoch : %d' %
-    #            (
-    #                epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
-    #                sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
-    #                doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-    #                epoch_metric_loss[epoch_cnt], best_metric, best_epoch
-    #            )
-    #        )
+
             print('epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
                 'F1_overall: %.2f, ER_overall: %.2f, '
                 'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
