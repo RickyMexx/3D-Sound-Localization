@@ -280,7 +280,6 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
     return er_metric, conf_mat
 
 
-    #To be used in future
 def distance_between_gt_pred(gt_list_rad, pred_list_rad):
     """
     Shortest distance between two sets of spherical coordinates. Given a set of groundtruth spherical coordinates,
@@ -353,21 +352,31 @@ def compute_doa_scores_regr(pred_doa_rad, gt_doa_rad, pred_sed, gt_sed):
     good_frame_cnt = 0
     doa_loss_pred = 0.0
     nb_sed = gt_sed.shape[-1]
+    doa_loss_gt_cnt = 0
+    doa_loss_gt = 0
 
     less_est_cnt, less_est_frame_cnt = 0, 0
     more_est_cnt, more_est_frame_cnt = 0, 0
 
+    #gt_sed is a matrix that contains, for every frame (rows), the sound event that is active and is flagged with a '1' 
     for frame_cnt, sed_frame in enumerate(gt_sed):
+        #How many events are in the given frame
         nb_src_gt_list[frame_cnt] = int(np.sum(sed_frame))
+        #How many event are predicted in the given frame
         nb_src_pred_list[frame_cnt] = int(np.sum(pred_sed[frame_cnt]))
 
         # good_frame_cnt includes frames where the nb active sources were zero in both groundtruth and prediction
+        #A frame is good if the predicted number of eventes is the same as the one in the ground truth
         if nb_src_gt_list[frame_cnt] == nb_src_pred_list[frame_cnt]:
             good_frame_cnt = good_frame_cnt + 1
         elif nb_src_gt_list[frame_cnt] > nb_src_pred_list[frame_cnt]:
+            #less_est_cnt counts how many events are NOT detected
+            #False Negatives
             less_est_cnt = less_est_cnt + nb_src_gt_list[frame_cnt] - nb_src_pred_list[frame_cnt]
             less_est_frame_cnt = less_est_frame_cnt + 1
         elif nb_src_gt_list[frame_cnt] < nb_src_pred_list[frame_cnt]:
+            #more_est_cnt counts how many events are incorrectly detected
+            #False Positives
             more_est_cnt = more_est_cnt + nb_src_pred_list[frame_cnt] - nb_src_gt_list[frame_cnt]
             more_est_frame_cnt = more_est_frame_cnt + 1
 
@@ -386,16 +395,40 @@ def compute_doa_scores_regr(pred_doa_rad, gt_doa_rad, pred_sed, gt_sed):
             doa_loss_pred += distance_between_gt_pred(np.vstack((doa_frame_gt_azi, doa_frame_gt_ele)).T,
                                                     np.vstack((doa_frame_pred_azi, doa_frame_pred_ele)).T)
 
-    doa_loss_pred_cnt = np.sum(nb_src_pred_list)
-    if doa_loss_pred_cnt:
-        doa_loss_pred /= doa_loss_pred_cnt
+
+        #TODO: doa loss with respect to groundtruth
+       
+            doa_frame_gt_azi = gt_doa_rad[frame_cnt][:nb_sed][sed_frame == 1]
+            doa_frame_gt_ele = gt_doa_rad[frame_cnt][nb_sed:][sed_frame == 1]
+           
+            doa_frame_pred_azi = pred_doa_rad[frame_cnt][:nb_sed][sed_frame == 1]
+            doa_frame_pred_ele = pred_doa_rad[frame_cnt][nb_sed:][sed_frame == 1]
+            
+            doa_loss_gt += distance_between_gt_pred(np.vstack((doa_frame_gt_azi, doa_frame_gt_ele)).T,
+                                                    np.vstack((doa_frame_pred_azi, doa_frame_pred_ele)).T)
+
+        #####
+
+
+        doa_loss_pred_cnt = np.sum(nb_src_pred_list)
+        if doa_loss_pred_cnt:
+            doa_loss_pred /= doa_loss_pred_cnt
+
+        doa_loss_gt_cnt = np.sum(nb_src_gt_list)
+        if doa_loss_gt_cnt:
+            doa_loss_gt /= doa_loss_gt_cnt
 
     frame_recall = good_frame_cnt / float(gt_sed.shape[0])
 
     conf_mat = confusion_matrix(nb_src_gt_list, nb_src_pred_list)
     conf_mat = conf_mat / (eps + np.sum(conf_mat, 1)[:, None].astype('float'))
 
-    er_metric = [doa_loss_pred, frame_recall, doa_loss_pred_cnt, good_frame_cnt, more_est_cnt, less_est_cnt]
+    max_nb_src_gt = np.max(nb_src_gt_list)
+    avg_accuracy = np.mean(np.diag(conf_mat[:max_nb_src_gt, :max_nb_src_gt]))
+
+    #er_metric = [avg_accuracy, doa_loss_gt, doa_loss_pred, doa_loss_gt_cnt, doa_loss_pred_cnt, good_frame_cnt]
+
+    er_metric = [avg_accuracy, doa_loss_gt, doa_loss_pred, doa_loss_gt_cnt, doa_loss_pred_cnt, good_frame_cnt]
     return er_metric, conf_mat
 
 
