@@ -3,6 +3,14 @@
 # the DOA metrics explained in the SELDnet paper
 #
 
+# bootstrap confidence intervals
+from numpy.random import seed
+from numpy.random import randint
+from numpy import median, mean, percentile
+
+# seed the random number generator
+seed(1)
+
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from IPython import embed
@@ -268,3 +276,34 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
     er_metric = [avg_accuracy, doa_loss_gt, doa_loss_pred, doa_loss_gt_cnt, doa_loss_pred_cnt, good_frame_cnt]
     return er_metric, conf_mat
 
+
+def compute_confidence(data):
+    # bootstrap
+    length = len(data)
+    scores = list()
+    for _ in range(100):
+        # bootstrap sample
+        indices = randint(0, length, length)
+        sample = data[indices]
+        # calculate and store statistic
+        statistic = mean(sample)
+        scores.append(statistic)
+
+    # calculate 95% confidence intervals (100 - alpha)
+    alpha = 5.0
+
+    # calculate lower percentile (e.g. 2.5)
+    lower_p = alpha / 2.0
+    # retrieve observation at lower percentile
+    lower = max(0.0, percentile(scores, lower_p))
+
+    # calculate upper percentile (e.g. 97.5)
+    upper_p = (100 - alpha) + (alpha / 2.0)
+    # retrieve observation at upper percentile
+    upper = min(1.0, percentile(scores, upper_p))
+
+    #print('median=%.3f' % median(scores))
+    #print('%.1fth percentile = %.3f' % (lower_p, lower))
+    #print('%.1fth percentile = %.3f' % (upper_p, upper))
+
+    return [lower, upper, median(scores)]
