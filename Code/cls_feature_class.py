@@ -15,10 +15,11 @@ plot.switch_backend('agg')
 
 
 class FeatureClass:
-    def __init__(self, dataset='foa', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
+    def __init__(self, dataset='ansim', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
 
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
+        
         if dataset == 'ansim':
             self._base_folder = 'ansim'
         elif dataset == 'resim':
@@ -32,15 +33,16 @@ class FeatureClass:
             self._base_folder = 'real'
             #self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
         elif dataset == 'foa':
-            self._base_folder = '../Dataset/'
-        
-        self._TRAIN_SPLIT = 150
+            self._base_folder = '/home/bebbo203/Scrivania/3D-Sound-Localization_old/Dataset'
+
         # Input directories
-        #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
-        #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
-        
-        self._aud_dir = os.path.join(self._base_folder, "foa_dev/wav_ov{}_split{}".format(ov, split))
-        self._desc_dir = os.path.join(self._base_folder, "metadata_dev/desc_ov{}_split{}".format(ov, split))
+        if dataset == 'foa':
+            self._aud_dir = os.path.join(self._base_folder, 'foa_dev/wav_ov{}_split{}'.format(ov, split, db, wav_extra_name))
+            self._desc_dir = os.path.join(self._base_folder, 'metadata_dev/desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
+        else:
+            self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
+            self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
+
 
         # Output directories
         self._label_dir = None
@@ -95,9 +97,8 @@ class FeatureClass:
                     'phone': 3,
                     'speech': 5
                 }
-        
 
-        self._fs = 48000 #44100 # New frequency is 48k
+        self._fs = 48000
         self._frame_res = self._fs / float(self._hop_len)
         self._hop_len_s = self._nfft/2.0/self._fs
         self._nb_frames_1s = int(1 / self._hop_len_s)
@@ -141,7 +142,38 @@ class FeatureClass:
     @staticmethod
     def _next_greater_power_of_2(x):
         return 2 ** (x - 1).bit_length()
-           
+    
+#    #Qfft taken from https://github.com/jflamant/bispy/tree/master/bispy
+#    def sympSplit(self, q):
+#        #Splits a quaternion array into two complex arrays.
+#        #The decomposition reads: q = q_1 + i q_2 where q_1, q_2 are complex (1, 1j) numpy arrays
+#
+#        q_1 = q[..., 0] + 1j * q[..., 3]
+#        q_2 = q[..., 0] + 1j * q[..., 2]
+#    
+#        return q_1, q_2
+#    
+#    def sympSynth(self, q_1, q_2):
+#        #correct dimension of float array (shape(q_1), 4)
+#        dimArray = list(q_1.shape)
+#        dimArray.append(4)
+#        qfloat = np.zeros(tuple(dimArray))
+#        qfloat[..., 0] = np.real(q_1)
+#        qfloat[..., 1] = np.real(q_2)
+#        qfloat[..., 2] = np.imag(q_1)
+#        qfloat[..., 3] = np.imag(q_2)
+#        
+#        return qfloat 
+#        #return quaternion.as_quat_array(qfloat)
+#    
+#    def Qfft(self, x, **kwargs):
+#        x_1, x_2 = self.sympSplit(np.ascontiguousarray(x))
+#        X_1 = np.fft.fft(x_1, **kwargs)
+#        X_2 = np.fft.fft(x_2, **kwargs)
+#        X = self.sympSynth(X_1, X_2)
+#        
+#        return X
+#        
     def _spectrogram(self, audio_input):
         _nb_ch = audio_input.shape[1]
         hann_win = np.repeat(np.hanning(self._win_len)[np.newaxis].T, _nb_ch, 1)
@@ -203,8 +235,10 @@ class FeatureClass:
             if 'real' in self._dataset:
                 desc_file['class'].append(split_line[0].split('.')[0].split('-')[1])
             else:
-                #desc_file['class'].append(split_line[0].split('.')[0][:-3])
-                desc_file['class'].append(split_line[0].split('.')[0])
+                if self._dataset == 'foa':
+                    desc_file['class'].append(split_line[0].split('.')[0])            
+                else:
+                    desc_file['class'].append(split_line[0].split('.')[0][:-3])  
             desc_file['start'].append(int(np.floor(float(split_line[1])*self._frame_res)))
             desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(split_line[3]))
@@ -247,9 +281,6 @@ class FeatureClass:
 
     def _get_se_labels(self, _desc_file):
         se_label = np.zeros((self._max_frames, len(self._unique_classes)))
-
-        print(self._unique_classes)
-
         for i, se_class in enumerate(_desc_file['class']):
             start_frame = _desc_file['start'][i]
             end_frame = self._max_frames if _desc_file['end'][i] > self._max_frames else _desc_file['end'][i]
@@ -297,7 +328,6 @@ class FeatureClass:
         #spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            #if file_cnt <= self._TRAIN_SPLIT:
             if 'train' in file_name:
                 print(file_cnt, train_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
@@ -387,15 +417,11 @@ class FeatureClass:
             'spec_ov{}_split{}_{}db_nfft{}{}'.format(self._ov, self._split, self._db, self._nfft, extra)
         )
 
-    
     def get_label_dir(self, mode, weakness, extra=''):
         return os.path.join(
             self._base_folder,
             'label_ov{}_split{}_nfft{}_{}{}{}'.format(self._ov, self._split, self._nfft, mode, 0 if mode is 'regr' else weakness, extra)
         )
-    
-
-
 
     def get_normalized_wts_file(self, extra=''):
         return os.path.join(

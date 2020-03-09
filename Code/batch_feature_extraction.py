@@ -1,7 +1,7 @@
 # Extracts the features, labels, and normalizes the training and test split features. Make sure you update the location
 # of the downloaded datasets before in the cls_feature_class.py
 
-import cls_feature_class_new as cls_feature_class
+import cls_feature_class
 
 dataset_name = 'foa'  # Datasets: ansim, resim, cansim, cresim and real
 
@@ -13,9 +13,7 @@ for ovo in [2]:  # SE overlap
 
             # Extract features and normalize them
             feat_cls.extract_all_feature()
-            print("####### Extraction done #######")
             feat_cls.preprocess_features()
-            print("####### Preprocess done #######")
+
             # # Extract labels in regression mode
             feat_cls.extract_all_labels('regr', 0)
-            print("####### Labels extraction done #######")

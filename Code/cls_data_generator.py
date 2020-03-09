@@ -12,7 +12,7 @@ import random
 
 class DataGenerator(object):
     def __init__(
-            self, datagen_mode='train', dataset='foa', ov=1, split=1, db=30, batch_size=32, seq_len=64,
+            self, datagen_mode='train', dataset='resim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
             azi_only=False
     ):
@@ -22,8 +22,7 @@ class DataGenerator(object):
         self._seq_len = seq_len
         self._shuffle = shuffle
         self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
-        #self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
-        self._label_dir = self._feat_cls.get_label_dir()
+        self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
         self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
@@ -67,7 +66,6 @@ class DataGenerator(object):
             )
         )
 
-
     def get_data_sizes(self):
         feat_shape = (self._batch_size, self._2_nb_ch, self._seq_len, self._feat_len)
         label_shape = [
@@ -80,20 +78,10 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_label_filenames_sizes(self):
-        
         for filename in os.listdir(self._label_dir):
             if self._datagen_mode in filename:
                 self._filenames_list.append(filename)
-            
 
-            #----------------------------------------------------------------------------------------------------------------------------------
-            '''
-            if cnt <= 150:
-                self._filenames_list.append(filename)
-                cnt += 1
-            '''
-
-        print(self._filenames_list)
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]
         self._feat_len = int(temp_feat.shape[1] / self._2_nb_ch)
