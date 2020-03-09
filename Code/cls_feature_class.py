@@ -33,7 +33,7 @@ class FeatureClass:
             self._base_folder = 'real'
             #self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
         elif dataset == 'foa':
-            self._base_folder = '/home/bebbo203/Scrivania/3D-Sound-Localization_old/Dataset'
+            self._base_folder = '../Dataset'
 
         # Input directories
         if dataset == 'foa':
