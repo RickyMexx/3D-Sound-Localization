@@ -12,6 +12,7 @@ import keras_model
 import parameter
 import utils
 import time
+import plotter_saver
 from keras.models import load_model
 from IPython import embed
 plot.switch_backend('agg')
@@ -40,92 +41,6 @@ def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_te
             break
     return gt_sed.astype(int), gt_doa
 
-
-#def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _epoch_metric_loss):
-#    plot.figure()
-#    nb_epoch = len(_tr_loss)
-#    plot.subplot(311)
-#    plot.plot(range(nb_epoch), _tr_loss, label='train loss')
-#    plot.plot(range(nb_epoch), _val_loss, label='val loss')
-#    plot.legend()
-#    plot.grid(True)
-#
-#    plot.subplot(312)
-#    plot.plot(range(nb_epoch), _epoch_metric_loss, label='metric')
-#    plot.plot(range(nb_epoch), _sed_loss[:, 0], label='er')
-#    plot.plot(range(nb_epoch), _sed_loss[:, 1], label='f1')
-#    plot.legend()
-#    plot.grid(True)
-#
-#    plot.subplot(313)
-#    plot.plot(range(nb_epoch), _doa_loss[:, 1], label='gt_thres')
-#    plot.plot(range(nb_epoch), _doa_loss[:, 2], label='pred_thres')
-#    plot.legend()
-#    plot.grid(True)
-#
-#    plot.savefig(fig_name)
-#    plot.close()
-    
-#def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _sed_score, _doa_score, epoch_cnt):
-#    plot.figure()
-#    nb_epoch=epoch_cnt
-#   # nb_epoch = len(_tr_loss)
-#    plot.subplot(311)
-#    #plot.plot(range(nb_epoch), _tr_loss, label='tr loss')
-#    #plot.plot(range(nb_epoch), _val_loss, label='val loss')
-#    plot.plot(range(nb_epoch), _tr_loss[:nb_epoch], label='tr loss')
-#    plot.plot(range(nb_epoch), _val_loss[:nb_epoch], label='val loss')
-#    plot.legend()
-#    plot.grid(True)
-#
-#    plot.subplot(312)
-#    #plot.plot(range(nb_epoch), _epoch_metric_loss, label='metric')
-#    #plot.plot(range(nb_epoch), _sed_loss[:, 0], label='er')
-#    #plot.plot(range(nb_epoch), _sed_loss[:, 1], label='f1')
-#    plot.plot(range(nb_epoch), _sed_score[:nb_epoch], label='sed_score')
-#    plot.plot(range(nb_epoch), _sed_loss[:nb_epoch, 0], label='er')
-#    plot.plot(range(nb_epoch), _sed_loss[:nb_epoch, 1], label='f1')
-#    plot.legend()
-#    plot.grid(True)
-#
-#    plot.subplot(313)
-#    #plot.plot(range(nb_epoch), _doa_loss[:, 1], label='gt_thres')
-#    #plot.plot(range(nb_epoch), _doa_loss[:, 2], label='pred_thres')
-#    plot.plot(range(nb_epoch), _doa_score, label='doa_score')
-#    plot.plot(range(nb_epoch), _doa_loss[:nb_epoch, 1], label='gt_thres')
-#    plot.plot(range(nb_epoch), _doa_loss[:nb_epoch, 2], label='pred_thres')
-#    plot.legend()
-#    plot.grid(True)
-#
-#    plot.savefig(fig_name)
-#    plot.close()
-'''
-def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _sed_score, _doa_score):
-    plot.figure()
-    nb_epoch = len(_tr_loss)
-    plot.subplot(311)
-    plot.plot(range(nb_epoch), _tr_loss, label='train loss')
-    plot.plot(range(nb_epoch), _val_loss, label='val loss')
-    plot.legend()
-    plot.grid(True)
-
-    plot.subplot(312)
-    plot.plot(range(nb_epoch), _sed_score, label='sed_score')
-    plot.plot(range(nb_epoch), _sed_loss[:, 0], label='er')
-    plot.plot(range(nb_epoch), _sed_loss[:, 1], label='f1')
-    plot.legend()
-    plot.grid(True)
-
-    plot.subplot(313)
-    plot.plot(range(nb_epoch), _doa_score, label='doa_score')
-    plot.plot(range(nb_epoch), _doa_loss[:, 1], label='gt_thres')
-    plot.plot(range(nb_epoch), _doa_loss[:, 2], label='pred_thres')
-    plot.legend()
-    plot.grid(True)
-
-    plot.savefig(fig_name)
-    plot.close()
-'''
 
 def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _sed_score, _doa_score, _seld_score):
     plot.figure()
@@ -326,32 +241,46 @@ def main(argv):
 
         #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
         #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score)
-        plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, seld_score)
+        
+        #We don't need that because we are saving every value in a csv array
+        #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, seld_score)
+
+
+        plot_array = [tr_loss[epoch_cnt], 
+                      val_loss[epoch_cnt], 
+                      sed_loss[epoch_cnt][0], #er
+                      sed_loss[epoch_cnt][1], #f1
+                      doa_loss[epoch_cnt][0], #avg_accuracy
+                      doa_loss[epoch_cnt][1], #doa_loss_gt
+                      doa_loss[epoch_cnt][2], #doa_loss_pred
+                      doa_loss[epoch_cnt][3], #doa_loss_gt_cnt
+                      doa_loss[epoch_cnt][4], #doa_loss_pred_cnt
+                      doa_loss[epoch_cnt][5], #good_frame_cnt
+                      sed_score[epoch_cnt], 
+                      doa_score[epoch_cnt], 
+                      seld_score[epoch_cnt], 
+                      doa_conf_low, doa_median, 
+                      doa_conf_up, sed_conf_low, 
+                      sed_median, sed_conf_up]
+        
+
+
 
         patience_cnt += 1
         
         model.save_weights('{}_model.ckpt'.format(unique_name))
-        print("##### Model saved! #####")
+        plotter_saver.save_array_to_csv("{}_plot.csv".format(unique_name), plot_array)
+        print("##### Model and metrics saved! #####")
 
         if sed_score[epoch_cnt] < best_metric:
             best_metric = sed_score[epoch_cnt]
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
-            model.save_weights('{}_model.ckpt'.format(unique_name))
+            #Now we save the model at every iteration 
+            #model.save_weights('{}_model.ckpt'.format(unique_name))
             patience_cnt = 0
             
-#        print(
-#            'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
-#            'F1_overall: %.2f, ER_overall: %.2f, '
-#            'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-#            'error_metric: %.2f, best_error_metric: %.2f, best_epoch : %d' %
-#            (
-#                epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
-#                sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
-#                doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-#                epoch_metric_loss[epoch_cnt], best_metric, best_epoch
-#            )
-#        )
+
         print('epoch_cnt: %d, time: %.2fs, tr_loss: %.4f, val_loss: %.4f, '
             'F1_overall: %.2f, ER_overall: %.2f, '
             'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
