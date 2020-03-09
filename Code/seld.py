@@ -210,14 +210,20 @@ def main(argv):
             ''' Computing confidence intervals '''
             sed_err = sed_gt - sed_pred
             [sed_conf_low, sed_conf_up, sed_median] = compute_confidence(sed_err)
-            print("Condidence Interval for SED error is [" + str(sed_conf_low) + ", " + str(sed_conf_up) + "]")
-            print("Median is " + str(sed_median))
-            print("Displacement: +/- " + str(sed_conf_up - sed_median))
+            #print("Condidence Interval for SED error is [" + str(sed_conf_low) + ", " + str(sed_conf_up) + "]")
+            print("Confidence Interval for SED error is [ %.5f, %.5f ]" % (sed_conf_low, sed_conf_up))
+            #print("\tMedian is " + str(sed_median))
+            print("\tMedian is %.5f" % (sed_median))
+            #print("\tDisplacement: +/- " + str(sed_conf_up - sed_median))
+            print("\tDisplacement: +/- %.5f" % (sed_conf_up - sed_median))
             doa_err = doa_gt - doa_pred
             [doa_conf_low, doa_conf_up, doa_median] = compute_confidence(doa_err)
-            print("Condidence Interval for DOA is [" + str(doa_conf_low) + ", " + str(doa_conf_up) + "]")
-            print("Median is " + str(doa_median))
-            print("Displacement: +/- " + str(doa_conf_up - doa_median))
+            #print("Condidence Interval for DOA is [" + str(doa_conf_low) + ", " + str(doa_conf_up) + "]")
+            print("Confidence Interval for DOA is [ %.5f, %.5f ]" % (doa_conf_low, doa_conf_up))
+            #print("Median is " + str(doa_median))
+            print("\tMedian is %.5f" % (doa_median))
+            #print("Displacement: +/- " + str(doa_conf_up - doa_median))
+            print("\tDisplacement: +/- %.5f" % (doa_conf_up - doa_median))
             ''' ------------------------------ '''
 
 
@@ -284,7 +290,7 @@ def main(argv):
         print('epoch_cnt: %d, time: %.2fs, tr_loss: %.4f, val_loss: %.4f, '
             'F1_overall: %.2f, ER_overall: %.2f, '
             'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-            'sed_score: %.4f, doa_score: %.4f, doa_score: %.4f, best_error_metric: %.2f, best_epoch : %d' %
+            'sed_score: %.4f, doa_score: %.4f, seld_score: %.4f, best_error_metric: %.2f, best_epoch : %d' %
             (
                 epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
                 sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
