@@ -1,0 +1,13 @@
+Il programma traina su un sola coppia ov-train.
+O mettiamo il ciclo sulla seld oppure dividiamo così:
+
+creati in foa_dev e in metadata_dev:
+wav_ovX_splitX e desc_ovX_splitX
+
+Io avevo fatto così (senza distinguere gli ov):
+split1 spli2 e split3 tutto in wav_ov2_split1 (e rispettivamente per desc)
+mettendo a tutti i file di split1 e split2 "train" e a quelli di split3 "test"
+split4 in wav_ov2_split4 così poi lo usiamo come eval finale.
+
+Sul programma gli setti nei params lo split e l'ov su cui deve lavorare (ov2 split2)
+e hai finito 
