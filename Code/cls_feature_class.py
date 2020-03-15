@@ -121,7 +121,7 @@ class FeatureClass:
             print('ERROR: chosen default_ele value {} should not exist in ele_list'.format(self._default_ele))
             exit()
 
-        self._audio_max_len_samples = 30 * self._fs  # TODO: Fix the audio synthesis code to always generate 30s of
+        self._audio_max_len_samples = 60 * self._fs  # TODO: Fix the audio synthesis code to always generate 30s of
         # audio. Currently it generates audio till the last active sound event, which is not always 30s long. This is a
         # quick fix to overcome that. We need this because, for processing and training we need the length of features
         # to be fixed.

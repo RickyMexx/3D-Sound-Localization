@@ -8,9 +8,9 @@ def get_params(argv):
     print("SET: {}".format(argv))
     # ########### default parameters ##############
     params = dict(
-        quick_test=True,    # To do quick test. Trains/test on small subset of dataset
-        quick_test_steps = 5,
-        quick_test_nb_batch = 5,
+        quick_test=False,    # To do quick test. Trains/test on small subset of dataset
+        quick_test_steps = 10,
+        quick_test_nb_batch = 10,
         azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
@@ -21,8 +21,8 @@ def get_params(argv):
         nfft=512,          # FFT/window length size
 
         # DNN Model parameters
-        sequence_length=512,        # Feature sequence length
-        batch_size=8,              # Batch size
+        sequence_length=128,        # Feature sequence length
+        batch_size=32,              # Batch size
         dropout_rate=0.2,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=32,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer

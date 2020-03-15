@@ -13,6 +13,7 @@ import parameter
 import utils
 import time
 import plotter_saver
+import datetime
 from keras.models import load_model
 from IPython import embed
 plot.switch_backend('agg')
@@ -109,10 +110,9 @@ def main(argv):
 
     model_dir = 'models/'
     utils.create_folder(model_dir)
-    unique_name = '{}_ov{}_split{}_{}{}_3d{}_{}'.format(
-        params['dataset'], params['overlap'], params['split'], params['mode'], params['weakness'],
-        int(params['cnn_3d']), job_id
-    )
+    unique_name = '{}_ov{}_split{}_{}'.format(
+        params['dataset'], params['overlap'], params['split'], params['sequence_length'])
+    
     unique_name = os.path.join(model_dir, unique_name)
     print("unique_name: {}\n".format(unique_name))
 
@@ -183,6 +183,7 @@ def main(argv):
     sed_loss = np.zeros((params['nb_epochs'], 2))
     for epoch_cnt in range(params['nb_epochs']):
         start = time.time()
+
         hist = model.fit_generator(
             generator=data_gen_train.generate(),
             steps_per_epoch=params['quick_test_steps'] if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
@@ -203,7 +204,11 @@ def main(argv):
         )
         print("pred:",pred[1].shape)
         if params['mode'] == 'regr':
-            sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
+            sed_mio = np.array(evaluation_metrics.reshape_3Dto2D(pred[0]))
+            sed_pred = np.array(evaluation_metrics.reshape_3Dto2D(pred[0])) > .5 
+                
+            
+            
             doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
 
@@ -235,12 +240,7 @@ def main(argv):
                 doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
                                                                                                   sed_pred, sed_gt)
 
-#            epoch_metric_loss[epoch_cnt] = np.mean([
-#                sed_loss[epoch_cnt, 0],
-#                1-sed_loss[epoch_cnt, 1],
-#                2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
-#                1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
-#            )
+
             sed_score[epoch_cnt] = np.mean([sed_loss[epoch_cnt, 0], 1-sed_loss[epoch_cnt, 1]])
             doa_score[epoch_cnt] = np.mean([2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi, 1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
             seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt]) / 2
@@ -252,17 +252,17 @@ def main(argv):
         #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, seld_score)
 
 
-        plot_array = [tr_loss[epoch_cnt], 
-                      val_loss[epoch_cnt], 
-                      sed_loss[epoch_cnt][0], #er
-                      sed_loss[epoch_cnt][1], #f1
-                      doa_loss[epoch_cnt][0], #avg_accuracy
-                      doa_loss[epoch_cnt][1], #doa_loss_gt
-                      doa_loss[epoch_cnt][2], #doa_loss_pred
-                      doa_loss[epoch_cnt][3], #doa_loss_gt_cnt
-                      doa_loss[epoch_cnt][4], #doa_loss_pred_cnt
-                      doa_loss[epoch_cnt][5], #good_frame_cnt
-                      sed_score[epoch_cnt], 
+        plot_array = [tr_loss[epoch_cnt],     #0
+                      val_loss[epoch_cnt],    #1 
+                      sed_loss[epoch_cnt][0], #2    er
+                      sed_loss[epoch_cnt][1], #3    f1
+                      doa_loss[epoch_cnt][0], #4    avg_accuracy
+                      doa_loss[epoch_cnt][1], #5    doa_loss_gt
+                      doa_loss[epoch_cnt][2], #6    doa_loss_pred
+                      doa_loss[epoch_cnt][3], #7    doa_loss_gt_cnt
+                      doa_loss[epoch_cnt][4], #8    doa_loss_pred_cnt
+                      doa_loss[epoch_cnt][5], #9    good_frame_cnt
+                      sed_score[epoch_cnt],   #10
                       doa_score[epoch_cnt], 
                       seld_score[epoch_cnt], 
                       doa_conf_low, doa_median, 
@@ -283,7 +283,7 @@ def main(argv):
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
             #Now we save the model at every iteration 
-            #model.save_weights('{}_model.ckpt'.format(unique_name))
+            model.save_weights('{}_BEST_model.ckpt'.format(unique_name))
             patience_cnt = 0
             
 
