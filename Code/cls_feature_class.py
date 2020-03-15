@@ -99,20 +99,23 @@ class FeatureClass:
                 }
 
         self._fs = 48000
-        self._frame_res = self._fs / float(self._hop_len)
+        
         self._hop_len_s = self._nfft/2.0/self._fs
         self._nb_frames_1s = int(1 / self._hop_len_s)
+        self._frame_res = self._fs / float(self._hop_len)
 
         self._resolution = 10
         self._azi_list = range(-180, 180, self._resolution)
         self._length = len(self._azi_list)
-        self._ele_list = range(-60, 60, self._resolution)
+        #CNG
+        self._ele_list = range(-40, 50, self._resolution)
         self._height = len(self._ele_list)
         self._weakness = None
 
         # For regression task only
         self._default_azi = 180
-        self._default_ele = 60
+        #CNG
+        self._default_ele = 50
 
         if self._default_azi in self._azi_list:
             print('ERROR: chosen default_azi value {} should not exist in azi_list'.format(self._default_azi))
@@ -143,37 +146,7 @@ class FeatureClass:
     def _next_greater_power_of_2(x):
         return 2 ** (x - 1).bit_length()
     
-#    #Qfft taken from https://github.com/jflamant/bispy/tree/master/bispy
-#    def sympSplit(self, q):
-#        #Splits a quaternion array into two complex arrays.
-#        #The decomposition reads: q = q_1 + i q_2 where q_1, q_2 are complex (1, 1j) numpy arrays
-#
-#        q_1 = q[..., 0] + 1j * q[..., 3]
-#        q_2 = q[..., 0] + 1j * q[..., 2]
-#    
-#        return q_1, q_2
-#    
-#    def sympSynth(self, q_1, q_2):
-#        #correct dimension of float array (shape(q_1), 4)
-#        dimArray = list(q_1.shape)
-#        dimArray.append(4)
-#        qfloat = np.zeros(tuple(dimArray))
-#        qfloat[..., 0] = np.real(q_1)
-#        qfloat[..., 1] = np.real(q_2)
-#        qfloat[..., 2] = np.imag(q_1)
-#        qfloat[..., 3] = np.imag(q_2)
-#        
-#        return qfloat 
-#        #return quaternion.as_quat_array(qfloat)
-#    
-#    def Qfft(self, x, **kwargs):
-#        x_1, x_2 = self.sympSplit(np.ascontiguousarray(x))
-#        X_1 = np.fft.fft(x_1, **kwargs)
-#        X_2 = np.fft.fft(x_2, **kwargs)
-#        X = self.sympSynth(X_1, X_2)
-#        
-#        return X
-#        
+       
     def _spectrogram(self, audio_input):
         _nb_ch = audio_input.shape[1]
         hann_win = np.repeat(np.hanning(self._win_len)[np.newaxis].T, _nb_ch, 1)
@@ -325,7 +298,8 @@ class FeatureClass:
         print('Estimating weights for normalizing feature files:')
         print('\t\tfeat_dir {}'.format(self._feat_dir))
 
-        #spec_scaler = preprocessing.StandardScaler()
+        #CNG
+        spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
             if 'train' in file_name:
