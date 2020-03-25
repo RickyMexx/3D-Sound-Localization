@@ -8,9 +8,10 @@ def get_params(argv):
     print("SET: {}".format(argv))
     # ########### default parameters ##############
     params = dict(
-        quick_test=True,    # To do quick test. Trains/test on small subset of dataset
-        quick_test_dim=15,
-        azi_only=True,      # Estimate Azimuth only
+        quick_test=False,    # To do quick test. Trains/test on small subset of dataset
+        quick_test_steps = 1,
+        quick_test_nb_batch = 1,
+        azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
         dataset='foa',    # Dataset to use: ansim, resim, cansim, cresim, real
@@ -18,10 +19,12 @@ def get_params(argv):
         split=1,           # Cross validation split [1, 2, 3]
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
+        train_split = [1,2,3],
+        test_split = [4],  # Validation 
 
         # DNN Model parameters
-        sequence_length=512,        # Feature sequence length
-        batch_size=8,              # Batch size
+        sequence_length=128,        # Feature sequence length
+        batch_size=32,              # Batch size
         dropout_rate=0.2,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=32,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer
@@ -29,7 +32,7 @@ def get_params(argv):
         fnn_size=[32],             # FNN contents, length of list = number of layers, list value = number of nodes
         loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
-        nb_epochs=10,             # Train for maximum epochs
+        nb_epochs=1000,             # Train for maximum epochs
 
         # Not important
         mode='regr',        # Only regression ('regr') supported as of now

@@ -3,11 +3,17 @@
 # the DOA metrics explained in the SELDnet paper
 #
 
+# bootstrap confidence intervals
+from numpy.random import seed
+from numpy.random import randint
+from numpy import median, mean, percentile
+
+# seed the random number generator
+seed(1)
+
 import numpy as np
 from sklearn.metrics import confusion_matrix
-import scipy.stats
 from IPython import embed
-
 
 eps = np.finfo(np.float).eps
 
@@ -78,22 +84,18 @@ def f1_overall_1sec(O, T, block_size):
     for i in range(0, new_size):
         O_block[i,] = np.max(O[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
-        
-
     return f1_overall_framewise(O_block, T_block)
 
 
 def er_overall_1sec(O, T, block_size):
     if len(O.shape) == 3:
         O, T = reshape_3Dto2D(O), reshape_3Dto2D(T)
- 
     new_size = int(O.shape[0] / (block_size))
     O_block = np.zeros((new_size, O.shape[1]))
     T_block = np.zeros((new_size, O.shape[1]))
     for i in range(0, new_size):
         O_block[i,] = np.max(O[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
-
     return er_overall_framewise(O_block, T_block)
 
 
@@ -118,10 +120,7 @@ def compute_sed_scores(pred, y, nb_frames_1s):
     f1o = f1_overall_1sec(pred, y, nb_frames_1s)
     ero = er_overall_1sec(pred, y, nb_frames_1s)
     scores = [ero, f1o]
-    print("ero is", ero)
-    print("f1o is", f1o)
     return scores
-
 
 
 def cart2sph(x,y,z):
@@ -278,3 +277,33 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
     return er_metric, conf_mat
 
 
+def compute_confidence(data):
+    # bootstrap
+    length = len(data)
+    scores = list()
+    for _ in range(100):
+        # bootstrap sample
+        indices = randint(0, length, length)
+        sample = data[indices]
+        # calculate and store statistic
+        statistic = mean(sample)
+        scores.append(statistic)
+
+    # calculate 95% confidence intervals (100 - alpha)
+    alpha = 5.0
+
+    # calculate lower percentile (e.g. 2.5)
+    lower_p = alpha / 2.0
+    # retrieve observation at lower percentile
+    lower = max(0.0, percentile(scores, lower_p))
+
+    # calculate upper percentile (e.g. 97.5)
+    upper_p = (100 - alpha) + (alpha / 2.0)
+    # retrieve observation at upper percentile
+    upper = min(1.0, percentile(scores, upper_p))
+
+    #print('median=%.3f' % median(scores))
+    #print('%.1fth percentile = %.3f' % (lower_p, lower))
+    #print('%.1fth percentile = %.3f' % (upper_p, upper))
+
+    return [lower, upper, median(scores)]

@@ -5,42 +5,29 @@
 import os
 import numpy as np
 import scipy.io.wavfile as wav
-import utils
 from sklearn import preprocessing
 from sklearn.externals import joblib
 from IPython import embed
-from numpy import linalg as LA
 import matplotlib.pyplot as plot
+import librosa
 plot.switch_backend('agg')
 
 
 class FeatureClass:
-    def __init__(self, dataset='foa', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
+    def __init__(self, dataset_dir='../Dataset/', feat_label_dir='../Dataset/feat_label_tmp/', dataset='foa', is_eval=False):
+        """
 
-        # TODO: Change the path according to your machine.
-        # TODO: It should point to a folder which consists of sub-folders for audio and metada
-        if dataset == 'ansim':
-            self._base_folder = 'ansim'
-        elif dataset == 'resim':
-            #self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_data_echoic/')
-            self._base_folder = 'resim'
-        elif dataset == 'cansim':
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata/')
-        elif dataset == 'cresim':
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata_echoic/')
-        elif dataset == 'real':
-            self._base_folder = 'real'
-            #self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
-        elif dataset == 'foa':
-            self._base_folder = '../Dataset/'
-        
-        self._TRAIN_SPLIT = 7
+        :param dataset: string, dataset name, supported: foa - ambisonic or mic- microphone format
+        :param is_eval: if True, does not load dataset labels.
+        """
+
         # Input directories
-        #-----self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
-        #-----self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
-        
-        self._aud_dir = os.path.join(self._base_folder, "foa_dev_reduced")
-        self._desc_dir = os.path.join(self._base_folder, "metadata_dev_reduced")
+        self._feat_label_dir = feat_label_dir
+        self._dataset_dir = dataset_dir
+        self._dataset_combination = '{}_{}'.format(dataset, 'eval' if is_eval else 'dev')
+        self._aud_dir = os.path.join(self._dataset_dir, self._dataset_combination)
+
+        self._desc_dir = None if is_eval else os.path.join(self._dataset_dir, 'metadata_dev')
 
         # Output directories
         self._label_dir = None
@@ -48,70 +35,52 @@ class FeatureClass:
         self._feat_dir_norm = None
 
         # Local parameters
-        self._mode = None
-        self._ov = ov
-        self._split = split
-        self._db = db
-        self._nfft = nfft
-        self._win_len = self._nfft
-        self._hop_len = self._nfft/2
+        self._is_eval = is_eval
+
+        self._fs = 48000
+        self._hop_len_s = 0.02
+        self._hop_len = int(self._fs * self._hop_len_s)
+        self._frame_res = self._fs / float(self._hop_len)
+        self._nb_frames_1s = int(self._frame_res)
+
+        self._win_len = 2 * self._hop_len
+        self._nfft = self._next_greater_power_of_2(self._win_len)
+
         self._dataset = dataset
         self._eps = np.spacing(np.float(1e-16))
+        self._nb_channels = 4
 
-        # If circular-array 8 channels else 4 for Ambisonic
-        if 'c' in self._dataset:
-            self._nb_channels = 8
-        else:
-            self._nb_channels = 4
-
-        # Sound event classes dictionary
+        # Sound event classes dictionary # DCASE 2016 Task 2 sound events
         self._unique_classes = dict()
-        if 'real' in self._dataset:
-            # Urbansound8k sound events
-            self._unique_classes = \
-                {
-                    '1': 0,
-                    '3': 1,
-                    '4': 2,
-                    '5': 3,
-                    '6': 4,
-                    '7': 5,
-                    '8': 6,
-                    '9': 7
-                }
-        else:
-            # DCASE 2016 Task 2 sound events
-            self._unique_classes = \
-                {
-                    'clearthroat': 2,
-                    'cough': 8,
-                    'doorslam': 9,
-                    'drawer': 1,
-                    'keyboard': 6,
-                    'keysDrop': 4,
-                    'knock': 0,
-                    'laughter': 10,
-                    'pageturn': 7,
-                    'phone': 3,
-                    'speech': 5
-                }
-        
+        self._unique_classes = \
+            {
+                'clearthroat': 2,
+                'cough': 8,
+                'doorslam': 9,
+                'drawer': 1,
+                'keyboard': 6,
+                'keysDrop': 4,
+                'knock': 0,
+                'laughter': 10,
+                'pageturn': 7,
+                'phone': 3,
+                'speech': 5
+            }
 
-        self._fs = 48000 #44100 # New frequency is 48k
-        self._frame_res = self._fs / float(self._hop_len)
-        self._hop_len_s = self._nfft/2.0/self._fs
-        self._nb_frames_1s = int(1 / self._hop_len_s)
-
-        self._resolution = 10
-        self._azi_list = range(-180, 180, self._resolution)
+        self._doa_resolution = 10
+        self._azi_list = range(-180, 180, self._doa_resolution)
         self._length = len(self._azi_list)
-        self._ele_list = range(-60, 60, self._resolution)
+        self._ele_list = range(-40, 50, self._doa_resolution)
         self._height = len(self._ele_list)
-        self._weakness = None
+
+        self._audio_max_len_samples = 60 * self._fs  # TODO: Fix the audio synthesis code to always generate 60s of
+        # audio. Currently it generates audio till the last active sound event, which is not always 60s long. This is a
+        # quick fix to overcome that. We need this because, for processing and training we need the length of features
+        # to be fixed.
 
         # For regression task only
         self._default_azi = 180
-        self._default_ele = 60
+        self._default_ele = 50
 
         if self._default_azi in self._azi_list:
             print('ERROR: chosen default_azi value {} should not exist in azi_list'.format(self._default_azi))
@@ -120,12 +89,7 @@ class FeatureClass:
             print('ERROR: chosen default_ele value {} should not exist in ele_list'.format(self._default_ele))
             exit()
 
-        self._audio_max_len_samples = 30 * self._fs  # TODO: Fix the audio synthesis code to always generate 30s of
-        # audio. Currently it generates audio till the last active sound event, which is not always 30s long. This is a
-        # quick fix to overcome that. We need this because, for processing and training we need the length of features
-        # to be fixed.
-
-        self._max_frames = int(np.ceil((self._audio_max_len_samples - self._win_len) / float(self._hop_len)))
+        self._max_frames = int(np.ceil(self._audio_max_len_samples / float(self._hop_len)))
 
     def _load_audio(self, audio_path):
         fs, audio = wav.read(audio_path)
@@ -141,106 +105,44 @@ class FeatureClass:
     @staticmethod
     def _next_greater_power_of_2(x):
         return 2 ** (x - 1).bit_length()
-    
-#    #Qfft taken from https://github.com/jflamant/bispy/tree/master/bispy
-#    def sympSplit(self, q):
-#        #Splits a quaternion array into two complex arrays.
-#        #The decomposition reads: q = q_1 + i q_2 where q_1, q_2 are complex (1, 1j) numpy arrays
-#
-#        q_1 = q[..., 0] + 1j * q[..., 3]
-#        q_2 = q[..., 0] + 1j * q[..., 2]
-#    
-#        return q_1, q_2
-#    
-#    def sympSynth(self, q_1, q_2):
-#        #correct dimension of float array (shape(q_1), 4)
-#        dimArray = list(q_1.shape)
-#        dimArray.append(4)
-#        qfloat = np.zeros(tuple(dimArray))
-#        qfloat[..., 0] = np.real(q_1)
-#        qfloat[..., 1] = np.real(q_2)
-#        qfloat[..., 2] = np.imag(q_1)
-#        qfloat[..., 3] = np.imag(q_2)
-#        
-#        return qfloat 
-#        #return quaternion.as_quat_array(qfloat)
-#    
-#    def Qfft(self, x, **kwargs):
-#        x_1, x_2 = self.sympSplit(np.ascontiguousarray(x))
-#        X_1 = np.fft.fft(x_1, **kwargs)
-#        X_2 = np.fft.fft(x_2, **kwargs)
-#        X = self.sympSynth(X_1, X_2)
-#        
-#        return X
-#        
+
     def _spectrogram(self, audio_input):
         _nb_ch = audio_input.shape[1]
-        hann_win = np.repeat(np.hanning(self._win_len)[np.newaxis].T, _nb_ch, 1)
-        nb_bins = self._nfft / 2
-        spectra = np.zeros((int(self._max_frames), int(nb_bins), int(_nb_ch)), dtype=complex)
-        for ind in range(self._max_frames):
-            start_ind = ind * self._hop_len
-            aud_frame = audio_input[int(start_ind) + np.arange(0, int(self._win_len)), :] * hann_win
-            #spectra[ind] = self.Qfft(aud_frame, n=int(self._nfft), axis=0, norm='ortho')[:int(nb_bins), :]
-            spectra[ind] = np.fft.fft(aud_frame, n=int(self._nfft), axis=0, norm='ortho')[:int(nb_bins), :]
+        nb_bins = self._nfft // 2
+        spectra = np.zeros((self._max_frames, nb_bins, _nb_ch), dtype=complex)
+        for ch_cnt in range(_nb_ch):
+            stft_ch = librosa.core.stft(audio_input[:, ch_cnt], n_fft=self._nfft, hop_length=self._hop_len,
+                                        win_length=self._win_len, window='hann')
+            spectra[:, :, ch_cnt] = stft_ch[1:, :self._max_frames].T
         return spectra
 
     def _extract_spectrogram_for_file(self, audio_filename):
         audio_in, fs = self._load_audio(os.path.join(self._aud_dir, audio_filename))
         audio_spec = self._spectrogram(audio_in)
-        active=np.zeros((audio_spec.shape[0],audio_spec.shape[1],audio_spec.shape[2]))
-        reactive=np.zeros((audio_spec.shape[0],audio_spec.shape[1],audio_spec.shape[2]))
-        w=audio_spec[:,:,0]
-        x=audio_spec[:,:,1]
-        y=audio_spec[:,:,2]
-        z=audio_spec[:,:,3]
-        n=np.square(np.abs(w))+(1/3)*(np.square(np.abs(x))+np.square(np.abs(y))+np.square(np.abs(z)))
-        #print("print n shape:", n.shape)
-        norm_matrix=np.reciprocal(n)
-        norm_matrix[norm_matrix == np.inf] = 0
-        #print("norm matrix:", norm_matrix)
-        #print("norm matrix shape:", norm_matrix.shape)
-        #norm_factor = 1.0/pow(LA.norm(w), 2)+(1/3)*(pow(LA.norm(x), 2)+pow(LA.norm(y), 2)+pow(LA.norm(z), 2))
-        active[:,:,0]=np.multiply(norm_matrix, np.real(np.multiply(np.matrix.conjugate(w),x)))
-        active[:,:,1]=np.multiply(norm_matrix, np.real(np.multiply(np.matrix.conjugate(w),y)))
-        active[:,:,2]=np.multiply(norm_matrix, np.real(np.multiply(np.matrix.conjugate(w),z)))
-        active[:,:,3]=np.multiply(norm_matrix, np.real(np.square(np.abs(np.matrix.conjugate(w)))))
-        #active=np.multiplyactive
-        #print("active shape:", active.shape)
-        #active=active.reshape(self._max_frames,-1)
-        reactive[:,:,0]=np.multiply(norm_matrix, np.imag(np.multiply(np.matrix.conjugate(w),x)))
-        reactive[:,:,1]=np.multiply(norm_matrix, np.imag(np.multiply(np.matrix.conjugate(w),y)))
-        reactive[:,:,2]=np.multiply(norm_matrix, np.imag(np.multiply(np.matrix.conjugate(w),z)))
-        reactive[:,:,3]=np.multiply(norm_matrix, np.imag(np.square(np.abs(np.matrix.conjugate(w)))))
-        #print("reactive shape:", reactive.shape)
-        #reactive=norm_factor*reactive
-        #reactive=reactive.reshape(self._max_frames,-1)
-        feature=np.concatenate((active,reactive),axis=2)
-        #feature=feature.reshape(self._max_frames, -1)
-        print(feature.shape)
-        print(feature.reshape(self._max_frames, -1).shape)  
-        np.save(os.path.join(self._feat_dir, audio_filename), feature.reshape(self._max_frames, -1))
+        # print('\t{}'.format(audio_spec.shape))
+        np.save(os.path.join(self._feat_dir, '{}.npy'.format(audio_filename.split('.')[0])), audio_spec.reshape(self._max_frames, -1))
 
     # OUTPUT LABELS
-    def _read_desc_file(self, desc_filename):
+    def read_desc_file(self, desc_filename, in_sec=False):
         desc_file = {
-            'class': list(), 'start': list(), 'end': list(), 'ele': list(), 'azi': list(), 'dist': list()
+            'class': list(), 'start': list(), 'end': list(), 'ele': list(), 'azi': list()
         }
-        fid = open(os.path.join(self._desc_dir, desc_filename), 'r')
-        #fid.next()
-        fid.readline()
+        fid = open(desc_filename, 'r')
+        next(fid)
         for line in fid:
             split_line = line.strip().split(',')
-            if 'real' in self._dataset:
-                desc_file['class'].append(split_line[0].split('.')[0].split('-')[1])
+            desc_file['class'].append(split_line[0])
+            # desc_file['class'].append(split_line[0].split('.')[0][:-3])
+            if in_sec:
+                # return onset-offset time in seconds
+                desc_file['start'].append(float(split_line[1]))
+                desc_file['end'].append(float(split_line[2]))
             else:
-                #desc_file['class'].append(split_line[0].split('.')[0][:-3])
-                desc_file['class'].append(split_line[0].split('.')[0])
-            desc_file['start'].append(int(np.floor(float(split_line[1])*self._frame_res)))
-            desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
+                # return onset-offset time in frames
+                desc_file['start'].append(int(np.floor(float(split_line[1])*self._frame_res)))
+                desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(split_line[3]))
             desc_file['azi'].append(int(split_line[4]))
-            desc_file['dist'].append(float(split_line[5]))
         fid.close()
         return desc_file
 
@@ -249,15 +151,11 @@ class FeatureClass:
         ele = (ele - self._ele_list[0]) // 10
         return azi * self._height + ele
 
-    def _get_matrix_index(self, ind):
+    def get_matrix_index(self, ind):
         azi, ele = ind // self._height, ind % self._height
         azi = (azi * 10 + self._azi_list[0])
         ele = (ele * 10 + self._ele_list[0])
         return azi, ele
-
-    def get_vector_index(self, ind):
-        azi = (ind * 10 + self._azi_list[0])
-        return azi
 
     def _get_doa_labels_regr(self, _desc_file):
         azi_label = self._default_azi*np.ones((self._max_frames, len(self._unique_classes)))
@@ -278,155 +176,157 @@ class FeatureClass:
 
     def _get_se_labels(self, _desc_file):
         se_label = np.zeros((self._max_frames, len(self._unique_classes)))
-
-        print(self._unique_classes)
-
         for i, se_class in enumerate(_desc_file['class']):
             start_frame = _desc_file['start'][i]
             end_frame = self._max_frames if _desc_file['end'][i] > self._max_frames else _desc_file['end'][i]
             se_label[start_frame:end_frame + 1, self._unique_classes[se_class]] = 1
         return se_label
 
-    def _get_labels_for_file(self, label_filename, _desc_file):
-        label_mat = None
-        if self._mode is 'regr':
-            se_label = self._get_se_labels(_desc_file)
-            doa_label = self._get_doa_labels_regr(_desc_file)
-            label_mat = np.concatenate((se_label, doa_label), axis=1)
-        else:
-            print("The supported modes are 'regr', you provided {}".format(self._mode))
-        print(label_mat.shape)
-        np.save(os.path.join(self._label_dir, label_filename), label_mat)
+    def get_labels_for_file(self, _desc_file):
+        """
+        Reads description csv file and returns classification based SED labels and regression based DOA labels
+
+        :param _desc_file: csv file
+        :return: label_mat: labels of the format [sed_label, doa_label],
+        where sed_label is of dimension [nb_frames, nb_classes] which is 1 for active sound event else zero
+        where doa_labels is of dimension [nb_frames, 2*nb_classes], nb_classes each for azimuth and elevation angles,
+        if active, the DOA values will be in degrees, else, it will contain default doa values given by
+        self._default_ele and self._default_azi
+        """
+
+        se_label = self._get_se_labels(_desc_file)
+        doa_label = self._get_doa_labels_regr(_desc_file)
+        label_mat = np.concatenate((se_label, doa_label), axis=1)
+        # print(label_mat.shape)
+        return label_mat
+
+    def get_clas_labels_for_file(self, _desc_file):
+        """
+        Reads description file and returns classification format labels for SELD
+
+        :param _desc_file: csv file
+        :return: _labels: matrix of SELD labels of dimension [nb_frames, nb_classes, nb_azi*nb_ele],
+                          which is 1 for active sound event and location else zero
+        """
+
+        _labels = np.zeros((self._max_frames, len(self._unique_classes), len(self._azi_list) * len(self._ele_list)))
+        for _ind, _start_frame in enumerate(_desc_file['start']):
+            _tmp_class = self._unique_classes[_desc_file['class'][_ind]]
+            _tmp_azi = _desc_file['azi'][_ind]
+            _tmp_ele = _desc_file['ele'][_ind]
+            _tmp_end = self._max_frames if _desc_file['end'][_ind] > self._max_frames else _desc_file['end'][_ind]
+            _tmp_ind = self.get_list_index(_tmp_azi, _tmp_ele)
+            _labels[_start_frame:_tmp_end + 1, _tmp_class, _tmp_ind] = 1
+
+        return _labels
 
     # ------------------------------- EXTRACT FEATURE AND PREPROCESS IT -------------------------------
-    def extract_all_feature(self, extra=''):
+    def extract_all_feature(self):
         # setting up folders
-        self._feat_dir = self.get_unnormalized_feat_dir(extra)
-        utils.create_folder(self._feat_dir)
+        self._feat_dir = self.get_unnormalized_feat_dir()
+        create_folder(self._feat_dir)
 
         # extraction starts
         print('Extracting spectrogram:')
         print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tfeat_dir {}'.format(
             self._aud_dir, self._desc_dir, self._feat_dir))
 
-        for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
-            print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
+        for file_cnt, file_name in enumerate(os.listdir(self._aud_dir)):
+            print('{}: {}'.format(file_cnt, file_name))
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
             self._extract_spectrogram_for_file(wav_filename)
 
-    def preprocess_features(self, extra=''):
+    def preprocess_features(self):
         # Setting up folders and filenames
-        self._feat_dir = self.get_unnormalized_feat_dir(extra)
-        self._feat_dir_norm = self.get_normalized_feat_dir(extra)
-        utils.create_folder(self._feat_dir_norm)
-        normalized_features_wts_file = self.get_normalized_wts_file(extra)
-
-        # pre-processing starts
-        print('Estimating weights for normalizing feature files:')
-        print('\t\tfeat_dir {}'.format(self._feat_dir))
-
-        #spec_scaler = preprocessing.StandardScaler()
-        train_cnt = 0
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            if file_cnt <= self._TRAIN_SPLIT:
-                print(file_cnt, train_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                #spec_scaler.partial_fit(feat_file)
-                #del feat_file
-                train_cnt += 1
-#        joblib.dump(
-#            spec_scaler,
-#            normalized_features_wts_file
-#        )
-        joblib.dump(
-            feat_file,
-            normalized_features_wts_file
-        )
-
-        print('Normalizing feature files:')
-        # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                print(file_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                #feat_file = spec_scaler.transform(feat_file)
-                np.save(
-                    os.path.join(self._feat_dir_norm, file_name),
-                    feat_file
-                )
-                #del feat_file
-        print('normalized files written to {} folder and the scaler to {}'.format(
-            self._feat_dir_norm, normalized_features_wts_file))
-
-    def normalize_features(self, extraname=''):
-        # Setting up folders and filenames
-        self._feat_dir = self.get_unnormalized_feat_dir(extraname)
-        self._feat_dir_norm = self.get_normalized_feat_dir(extraname)
-        utils.create_folder(self._feat_dir_norm)
+        self._feat_dir = self.get_unnormalized_feat_dir()
+        self._feat_dir_norm = self.get_normalized_feat_dir()
+        create_folder(self._feat_dir_norm)
         normalized_features_wts_file = self.get_normalized_wts_file()
+        spec_scaler = None
 
         # pre-processing starts
-        print('Estimating weights for normalizing feature files:')
-        print('\t\tfeat_dir {}'.format(self._feat_dir))
+        if self._is_eval:
+            spec_scaler = joblib.load(normalized_features_wts_file)
+            print('Normalized_features_wts_file: {}. Loaded.'.format(normalized_features_wts_file))
 
-        #spec_scaler = joblib.load(normalized_features_wts_file)
-        print('Normalizing feature files:')
-        # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                print(file_cnt, file_name)
+        else:
+            print('Estimating weights for normalizing feature files:')
+            print('\t\tfeat_dir: {}'.format(self._feat_dir))
+
+            spec_scaler = preprocessing.StandardScaler()
+            for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
+                if("wav" in file_name):
+                    continue
+                print('{}: {}'.format(file_cnt, file_name))
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                #feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                #feat_file = spec_scaler.transform(feat_file)
-                np.save(
-                    os.path.join(self._feat_dir_norm, file_name),
-                    feat_file
-                )
-                #del feat_file
-        print('normalized files written to {} folder and the scaler to {}'.format(
-            self._feat_dir_norm, normalized_features_wts_file))
+                spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+                del feat_file
+            joblib.dump(
+                spec_scaler,
+                normalized_features_wts_file
+            )
+            print('Normalized_features_wts_file: {}. Saved.'.format(normalized_features_wts_file))
+
+        print('Normalizing feature files:')
+        print('\t\tfeat_dir_norm {}'.format(self._feat_dir_norm))
+        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
+            if("wav" in file_name):
+                continue
+            print('{}: {}'.format(file_cnt, file_name))
+            feat_file = np.load(os.path.join(self._feat_dir, file_name))
+            feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+            np.save(
+                os.path.join(self._feat_dir_norm, file_name),
+                feat_file
+            )
+            del feat_file
+
+        print('normalized files written to {}'.format(self._feat_dir_norm))
 
     # ------------------------------- EXTRACT LABELS AND PREPROCESS IT -------------------------------
-    def extract_all_labels(self, mode='regr', weakness=0, extra=''):
-        self._label_dir = self.get_label_dir(mode, weakness, extra)
-        self._mode = mode
-        self._weakness = weakness
+    def extract_all_labels(self):
+        self._label_dir = self.get_label_dir()
 
-        print('Extracting spectrogram and labels:')
+        print('Extracting labels:')
         print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tlabel_dir {}'.format(
             self._aud_dir, self._desc_dir, self._label_dir))
-        utils.create_folder(self._label_dir)
+        create_folder(self._label_dir)
 
         for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
-            print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
+            print('{}: {}'.format(file_cnt, file_name))
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
-            desc_file = self._read_desc_file(file_name)
-            self._get_labels_for_file(wav_filename, desc_file)
+            desc_file = self.read_desc_file(os.path.join(self._desc_dir, file_name))
+            label_mat = self.get_labels_for_file(desc_file)
+            np.save(os.path.join(self._label_dir, '{}.npy'.format(wav_filename.split('.')[0])), label_mat)
 
     # ------------------------------- Misc public functions -------------------------------
     def get_classes(self):
         return self._unique_classes
 
-    def get_normalized_feat_dir(self, extra=''):
+    def get_normalized_feat_dir(self):
         return os.path.join(
-            self._base_folder,
-            'spec_ov{}_split{}_{}db_nfft{}{}_norm'.format(self._ov, self._split, self._db, self._nfft, extra)
+            self._feat_label_dir,
+            '{}_norm'.format(self._dataset_combination)
         )
 
-    def get_unnormalized_feat_dir(self, extra=''):
+    def get_unnormalized_feat_dir(self):
         return os.path.join(
-            self._base_folder,
-            'spec_ov{}_split{}_{}db_nfft{}{}'.format(self._ov, self._split, self._db, self._nfft, extra)
+            self._feat_label_dir,
+            '{}'.format(self._dataset_combination)
         )
 
-    def get_label_dir(self, mode, weakness, extra=''):
-        return os.path.join(
-            self._base_folder,
-            'label_ov{}_split{}_nfft{}_{}{}{}'.format(self._ov, self._split, self._nfft, mode, 0 if mode is 'regr' else weakness, extra)
-        )
+    def get_label_dir(self):
+        if self._is_eval:
+            return None
+        else:
+            return os.path.join(
+                self._feat_label_dir, '{}_label'.format(self._dataset_combination)
+            )
 
-    def get_normalized_wts_file(self, extra=''):
+    def get_normalized_wts_file(self):
         return os.path.join(
-            self._base_folder,
-            'spec_ov{}_split{}_{}db_nfft{}{}_wts'.format(self._ov, self._split, self._db, self._nfft, extra)
+            self._feat_label_dir,
+            '{}_wts'.format(self._dataset)
         )
 
     def get_default_azi_ele_regr(self):
@@ -437,3 +337,18 @@ class FeatureClass:
 
     def nb_frames_1s(self):
         return self._nb_frames_1s
+
+    def get_hop_len_sec(self):
+        return self._hop_len_s
+
+    def get_azi_ele_list(self):
+        return self._azi_list, self._ele_list
+
+    def get_nb_frames(self):
+        return self._max_frames
+    
+
+def create_folder(folder_name):
+    if not os.path.exists(folder_name):
+        print('{} folder does not exist, creating it.'.format(folder_name))
+        os.makedirs(folder_name)
