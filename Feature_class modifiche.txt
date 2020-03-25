@@ -1,0 +1,43 @@
+
+//CODICE PROFESSORE \\
+Funzioni di cls_feature_class usate da:
+
+
+seld.py -> DataGenerator 
+
+cls_data_generator.py -> 
+25:  Costruttore 
+26:  get_label_dir *
+27:  get_normalized_feat_dir *
+38:  get_classes
+40:  get_deafault_azi_ele_regr
+238: get_list_index
+241: get_vector_index
+247: nb_frames_1s
+
+batch_feature_extraction ->
+12:  Costruttore
+15:  extract_all_feature()
+16:  preprocess_features()
+19:  extract_all_labels()
+
+//CODICE SELD\\
+
+Differenze:
+get_label_dir: solamente denominazioni
+	professore: ../Dataset/feat_label_tmp/foa_dev_label
+	tizio:	    ../Dataset/feat_label_tmp/foa_dev_label
+get_normalized_feat_dir: UGUALE
+	professore: ../Dataset/feat_label_tmp/foa_dev_norm
+	tizio: 	    ../Dataset/feat_label_tmp/foa_dev_norm
+
+
+MODIFICHE:
++Preso il cls_feature_extraction di seld-dcase2019
++Problemi nel costruttore:
+	25) Cambiata la chiamata al costruttore
++get_label_dir takes one argument:
+	28) Cambiata la chiamata: tutto vuoto
++get_normalized_feat_dir takes one argument:
+	30) Come prima	
+

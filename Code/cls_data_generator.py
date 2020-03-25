@@ -8,11 +8,12 @@ import cls_feature_class
 from IPython import embed
 from collections import deque
 import random
+import parameter
 
 
 class DataGenerator(object):
     def __init__(
-            self, datagen_mode='train', dataset='foa', ov=1, split=1, db=30, batch_size=32, seq_len=64,
+            self, datagen_mode='train', dataset='resim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
             azi_only=False
     ):
@@ -21,9 +22,12 @@ class DataGenerator(object):
         self._batch_size = batch_size
         self._seq_len = seq_len
         self._shuffle = shuffle
-        self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
-        self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
-        self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
+        #self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
+        self._feat_cls = cls_feature_class.FeatureClass()
+        #self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
+        self._label_dir = self._feat_cls.get_label_dir()
+        #self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
+        self._feat_dir = self._feat_cls.get_normalized_feat_dir()
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only
@@ -43,6 +47,7 @@ class DataGenerator(object):
         self._batch_seq_len = self._batch_size*self._seq_len
         self._circ_buf_feat = None
         self._circ_buf_label = None
+        
 
         self._nb_total_batches = int(np.floor((len(self._filenames_list) * self._nb_frames_file /
                                                float(self._seq_len * self._batch_size))))
@@ -66,7 +71,6 @@ class DataGenerator(object):
             )
         )
 
-
     def get_data_sizes(self):
         feat_shape = (self._batch_size, self._2_nb_ch, self._seq_len, self._feat_len)
         label_shape = [
@@ -79,19 +83,31 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_label_filenames_sizes(self):
-        cnt = 0
+        #for filename in os.listdir(self._label_dir):
+        #    if self._datagen_mode in filename:
+        #        self._filenames_list.append(filename)
+
+        #1 stands for default configuration
+        _params = parameter.get_params('1')
+        cnt_train = 0
+        cnt_test = 0
+
         for filename in os.listdir(self._label_dir):
-            '''
-            if self._datagen_mode in filename:
-                self._filenames_list.append(filename)
-            '''
+            if self._datagen_mode == "train":
+                for split_n in _params["train_split"]:
+                    if "split"+str(split_n) in filename:
+                        self._filenames_list.append(filename)
+                        print("TRAIN " + str(cnt_train)+": "+filename)
+                        cnt_train = cnt_train+1
+            else:
+                for split_n in _params["test_split"]:
+                    if "split"+str(split_n) in filename:
+                        self._filenames_list.append(filename)
+                        print("TEST " + str(cnt_test)+": "+filename)
+                        cnt_test = cnt_test+1
 
-            #----------------------------------------------------------------------------------------------------------------------------------
-            if cnt <= 7:
-                self._filenames_list.append(filename)
-                cnt += 1
 
-        print(self._filenames_list)
+
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]
         self._feat_len = int(temp_feat.shape[1] / self._2_nb_ch)
@@ -135,8 +151,10 @@ class DataGenerator(object):
                 feat = np.zeros((int(self._batch_seq_len), int(self._feat_len) * int(self._2_nb_ch)))
                 label = np.zeros((int(self._batch_seq_len), int(self._label_len)))
                 for j in range(self._batch_seq_len):
-                    feat[j, :] = self._circ_buf_feat.popleft()
-                    label[j, :] = self._circ_buf_label.popleft()
+                    if self._circ_buf_feat:
+                        feat[j, :] = self._circ_buf_feat.popleft()
+                    if self._circ_buf_label:
+                        label[j, :] = self._circ_buf_label.popleft()
                 feat = np.reshape(feat, (int(self._batch_seq_len), int(self._feat_len), int(self._2_nb_ch)))
 
                 # Split to sequences
