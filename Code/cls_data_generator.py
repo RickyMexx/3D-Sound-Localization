@@ -22,9 +22,12 @@ class DataGenerator(object):
         self._batch_size = batch_size
         self._seq_len = seq_len
         self._shuffle = shuffle
-        self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
-        self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
-        self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
+        #self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
+        self._feat_cls = cls_feature_class.FeatureClass()
+        #self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
+        self._label_dir = self._feat_cls.get_label_dir()
+        #self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
+        self._feat_dir = self._feat_cls.get_normalized_feat_dir()
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only

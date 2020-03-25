@@ -161,10 +161,10 @@ def main(argv):
                     rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
                     classification_mode=params['mode'], weights=params['loss_weights'])
 
-    if(os.path.exists('{}_model.ckpt'.format(unique_name))):
+    if(os.path.exists('{}_model_old.ckpt'.format(unique_name))):
         print("Model found!")
-        model.load_weights('{}_model.ckpt'.format(unique_name))
-        for i in range(25):
+        model.load_weights('{}_model_old.ckpt'.format(unique_name))
+        for i in range(50):
             print("#")
 
                 
@@ -274,7 +274,10 @@ def main(argv):
 
         patience_cnt += 1
         
-        model.save_weights('{}_model.ckpt'.format(unique_name))
+        if(os.path.exists('{}_model_new.ckpt'.format(unique_name)):)
+            os.rename('{}_model_new.ckpt'.format(unique_name), '{}_model_old.ckpt'.format(unique_name))
+        print("## Backup Done ##")
+        model.save_weights('{}_model_new.ckpt'.format(unique_name))
         plotter_saver.save_array_to_csv("{}_plot.csv".format(unique_name), plot_array)
         print("##### Model and metrics saved! #####")
 
