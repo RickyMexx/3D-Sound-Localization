@@ -148,8 +148,10 @@ class DataGenerator(object):
                 feat = np.zeros((int(self._batch_seq_len), int(self._feat_len) * int(self._2_nb_ch)))
                 label = np.zeros((int(self._batch_seq_len), int(self._label_len)))
                 for j in range(self._batch_seq_len):
-                    feat[j, :] = self._circ_buf_feat.popleft()
-                    label[j, :] = self._circ_buf_label.popleft()
+                    if self._circ_buf_feat:
+                        feat[j, :] = self._circ_buf_feat.popleft()
+                    if self._circ_buf_label:
+                        label[j, :] = self._circ_buf_label.popleft()
                 feat = np.reshape(feat, (int(self._batch_seq_len), int(self._feat_len), int(self._2_nb_ch)))
 
                 # Split to sequences

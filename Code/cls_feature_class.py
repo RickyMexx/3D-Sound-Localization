@@ -380,28 +380,40 @@ class FeatureClass:
         return self._unique_classes
 
     def get_normalized_feat_dir(self, extra=''):
+        return self._base_folder + '/feat_label_tmp/foa_dev_norm'
+        '''
         return os.path.join(
             self._base_folder,
             'spec_ov{}_split{}_{}db_nfft{}{}_norm'.format(self._ov, self._split, self._db, self._nfft, extra)
         )
+        '''
 
     def get_unnormalized_feat_dir(self, extra=''):
+        return self._base_folder + '/feat_label_tmp/foa_dev'
+        '''
         return os.path.join(
             self._base_folder,
             'spec_ov{}_split{}_{}db_nfft{}{}'.format(self._ov, self._split, self._db, self._nfft, extra)
         )
+        '''
 
     def get_label_dir(self, mode, weakness, extra=''):
+        return self._base_folder + '/feat_label_tmp/foa_dev_label'
+        '''
         return os.path.join(
             self._base_folder,
             'label_ov{}_split{}_nfft{}_{}{}{}'.format(self._ov, self._split, self._nfft, mode, 0 if mode is 'regr' else weakness, extra)
         )
+        '''
 
     def get_normalized_wts_file(self, extra=''):
+        return self._base_folder + '/feat_label_tmp/foa_wts'
+        '''
         return os.path.join(
             self._base_folder,
             'spec_ov{}_split{}_{}db_nfft{}{}_wts'.format(self._ov, self._split, self._db, self._nfft, extra)
         )
+        '''
 
     def get_default_azi_ele_regr(self):
         return self._default_azi, self._default_ele
