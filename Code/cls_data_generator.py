@@ -8,6 +8,7 @@ import cls_feature_class
 from IPython import embed
 from collections import deque
 import random
+import parameter
 
 
 class DataGenerator(object):
@@ -43,6 +44,7 @@ class DataGenerator(object):
         self._batch_seq_len = self._batch_size*self._seq_len
         self._circ_buf_feat = None
         self._circ_buf_label = None
+        
 
         self._nb_total_batches = int(np.floor((len(self._filenames_list) * self._nb_frames_file /
                                                float(self._seq_len * self._batch_size))))
@@ -78,9 +80,30 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_label_filenames_sizes(self):
+        #for filename in os.listdir(self._label_dir):
+        #    if self._datagen_mode in filename:
+        #        self._filenames_list.append(filename)
+
+        #1 stands for default configuration
+        _params = parameter.get_params('1')
+        cnt_train = 0
+        cnt_test = 0
+
         for filename in os.listdir(self._label_dir):
-            if self._datagen_mode in filename:
-                self._filenames_list.append(filename)
+            if self._datagen_mode == "train":
+                for split_n in _params["train_split"]:
+                    if "split"+str(split_n) in filename:
+                        self._filenames_list.append(filename)
+                        print("TRAIN " + str(cnt_train)+": "+filename)
+                        cnt_train = cnt_train+1
+            else:
+                for split_n in _params["test_split"]:
+                    if "split"+str(split_n) in filename:
+                        self._filenames_list.append(filename)
+                        print("TEST " + str(cnt_test)+": "+filename)
+                        cnt_test = cnt_test+1
+
+
 
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]

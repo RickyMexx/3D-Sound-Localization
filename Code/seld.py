@@ -110,8 +110,8 @@ def main(argv):
 
     model_dir = 'models/'
     utils.create_folder(model_dir)
-    unique_name = '{}_ov{}_split{}_{}'.format(
-        params['dataset'], params['overlap'], params['split'], params['sequence_length'])
+    unique_name = '{}_train{}_validation{}_seq{}'.format(
+        params['dataset'], params['train_split'], params['test_split'], params['sequence_length'])
     
     unique_name = os.path.join(model_dir, unique_name)
     print("unique_name: {}\n".format(unique_name))
