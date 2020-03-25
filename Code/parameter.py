@@ -19,12 +19,12 @@ def get_params(argv):
         split=1,           # Cross validation split [1, 2, 3]
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
-        train_split = [3],
-        test_split = [2],  # Validation 
+        train_split = [1,2,3],
+        test_split = [4],  # Validation 
 
         # DNN Model parameters
-        sequence_length=64,        # Feature sequence length
-        batch_size=8,              # Batch size
+        sequence_length=128,        # Feature sequence length
+        batch_size=32,              # Batch size
         dropout_rate=0.2,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=32,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer

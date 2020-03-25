@@ -274,7 +274,7 @@ def main(argv):
 
         patience_cnt += 1
         
-        if(os.path.exists('{}_model_new.ckpt'.format(unique_name)):)
+        if(os.path.exists('{}_model_new.ckpt'.format(unique_name))):
             os.rename('{}_model_new.ckpt'.format(unique_name), '{}_model_old.ckpt'.format(unique_name))
         print("## Backup Done ##")
         model.save_weights('{}_model_new.ckpt'.format(unique_name))
