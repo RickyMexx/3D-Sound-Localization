@@ -5,7 +5,7 @@ def save_array_to_csv(file_name, array_to_save):
 
     string_to_write = ""
     for elem in array_to_save:
-        s = "%.2f," % (float(elem))
+        s = "%f," % (float(elem))
         string_to_write += s
     #Remove the last comma
     string_to_write = string_to_write[:-1]
