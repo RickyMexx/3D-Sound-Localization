@@ -19,7 +19,7 @@ def get_params(argv):
         split=1,           # Cross validation split [1, 2, 3]
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
-        train_split = [1,2,3],
+        train_split = [1,2],
         test_split = [4],  # Validation 
 
         # DNN Model parameters
