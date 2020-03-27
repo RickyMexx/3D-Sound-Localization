@@ -243,8 +243,9 @@ def main(argv):
                                             1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
             seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt]) / 2
 
-            plt.imshow(conf_mat, cmap='binary', interpolation='None')
-            plt.savefig('models/confusion_matrix.jpg')
+            if os.path.isdir('./models'):
+                plt.imshow(conf_mat, cmap='binary', interpolation='None')
+                plt.savefig('models/confusion_matrix.jpg')
 
         # plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
         # plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score)
