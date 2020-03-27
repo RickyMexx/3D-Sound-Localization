@@ -202,6 +202,7 @@ def main(argv):
             use_multiprocessing=False,
             verbose=2
         )
+
         print("pred:", pred[1].shape)
         if params['mode'] == 'regr':
             sed_mio = np.array(evaluation_metrics.reshape_3Dto2D(pred[0]))
@@ -242,6 +243,9 @@ def main(argv):
                                             1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
             seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt]) / 2
 
+            plt.imshow(conf_mat, cmap='binary', interpolation='None')
+            plt.savefig('models/confusion_matrix.jpg')
+
         # plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
         # plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score)
 
@@ -250,8 +254,8 @@ def main(argv):
 
         plot_array = [tr_loss[epoch_cnt],  # 0
                       val_loss[epoch_cnt],  # 1
-                      sed_loss[epoch_cnt][0],  # 2    er
-                      sed_loss[epoch_cnt][1],  # 3    f1
+                      sed_loss[epoch_cnt][0],  # 2    er_overall
+                      sed_loss[epoch_cnt][1],  # 3    f1_overall
                       doa_loss[epoch_cnt][0],  # 4    avg_accuracy
                       doa_loss[epoch_cnt][1],  # 5    doa_loss_gt
                       doa_loss[epoch_cnt][2],  # 6    doa_loss_pred
