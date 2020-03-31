@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 
-file_name = "models/foa_train[3]_validation[2]_seq64_plot.csv"
+file_name = "models/foa_ov2_split1_128_plot.csv"
 
 
 def simple_plotter(file_name, column_number):

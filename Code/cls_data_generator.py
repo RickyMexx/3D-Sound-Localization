@@ -22,12 +22,10 @@ class DataGenerator(object):
         self._batch_size = batch_size
         self._seq_len = seq_len
         self._shuffle = shuffle
-        #self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
-        self._feat_cls = cls_feature_class.FeatureClass()
-        #self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
-        self._label_dir = self._feat_cls.get_label_dir()
-        #self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
-        self._feat_dir = self._feat_cls.get_normalized_feat_dir()
+        self._split = split;
+        self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
+        self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
+        self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only
@@ -100,11 +98,10 @@ class DataGenerator(object):
                         print("TRAIN " + str(cnt_train)+": "+filename)
                         cnt_train = cnt_train+1
             else:
-                for split_n in _params["test_split"]:
-                    if "split"+str(split_n) in filename:
-                        self._filenames_list.append(filename)
-                        print("TEST " + str(cnt_test)+": "+filename)
-                        cnt_test = cnt_test+1
+                if "split"+str(self._split) in filename:
+                    self._filenames_list.append(filename)
+                    print("TEST " + str(cnt_test)+": "+filename)
+                    cnt_test = cnt_test+1
 
 
 
