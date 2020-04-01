@@ -149,7 +149,7 @@ def main(argv):
     model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
                     nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
                     rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                    classification_mode=params['mode'], weights=params['loss_weights'])
+                    classification_mode=params['mode'], weights=params['loss_weights'], summary=False)
 
     if(os.path.exists('{}_model.ckpt'.format(unique_name))):
         print("Model found!")
@@ -157,13 +157,7 @@ def main(argv):
         for i in range(10):
             print("###")
 
-                
-    best_metric = 99999
-    conf_mat = None
-    best_conf_mat = None
-    best_epoch = -1
-    patience_cnt = 0
-    epoch_metric_loss = np.zeros(params['nb_epochs'])
+
     sed_score=np.zeros(params['nb_epochs'])
     doa_score=np.zeros(params['nb_epochs'])
     seld_score = np.zeros(params['nb_epochs'])
@@ -171,7 +165,6 @@ def main(argv):
     val_loss = np.zeros(params['nb_epochs'])
     doa_loss = np.zeros((params['nb_epochs'], 6))
     sed_loss = np.zeros((params['nb_epochs'], 2))
-
 
     epoch_cnt = 0
     start = time.time()
@@ -251,25 +244,16 @@ def main(argv):
         print('epoch_cnt: %d, time: %.2fs, tr_loss: %.4f, val_loss: %.4f, '
             'F1_overall: %.2f, ER_overall: %.2f, '
             'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-            'sed_score: %.4f, doa_score: %.4f, seld_score: %.4f, best_error_metric: %.2f' %
+            'sed_score: %.4f, doa_score: %.4f, seld_score: %.4f' %
             (
                 epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
                 sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
                 doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-                sed_score[epoch_cnt], doa_score[epoch_cnt], seld_score[epoch_cnt], best_metric
+                sed_score[epoch_cnt], doa_score[epoch_cnt], seld_score[epoch_cnt]
             )
         )
     
     #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, epoch_cnt)
-    '''
-    print('best_conf_mat : {}'.format(best_conf_mat))
-    print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
-    print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
-    print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
-        doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
-    print('SED Metrics: ER_overall: {}, F1_overall: {}'.format(sed_loss[best_epoch, 0], sed_loss[best_epoch, 1]))
-    print('unique_name: {} '.format(unique_name))
-    '''
 
 if __name__ == "__main__":
     try:

@@ -12,27 +12,29 @@ from keras.optimizers import Adam
 
 from IPython import embed
 import complexnn
-from   complexnn                             import *
+from complexnn import *
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
 
-#Delete if you don't have a GPU
+# Delete if you don't have a GPU
 config = ConfigProto()
 config.gpu_options.allow_growth = True
 session = InteractiveSession(config=config)
+
+
 ####
 
 
-
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
-                                rnn_size, fnn_size, classification_mode, weights):
+              rnn_size, fnn_size, classification_mode, weights, summary):
     # model definition
     spec_start = Input(shape=(data_in[-2], data_in[-1], data_in[-3]))
     print("start input:", spec_start)
     spec_cnn = spec_start
     for i, convCnt in enumerate(pool_size):
         print(spec_cnn)
-        spec_cnn = QuaternionConv2D(filters=nb_cnn2d_filt, kernel_size=(3, 3), data_format='channels_last', padding='same')(spec_cnn)
+        spec_cnn = QuaternionConv2D(filters=nb_cnn2d_filt, kernel_size=(3, 3), data_format='channels_last',
+                                    padding='same')(spec_cnn)
         print(spec_cnn)
         spec_cnn = BatchNormalization()(spec_cnn)
         print(spec_cnn)
@@ -42,18 +44,18 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
         print(spec_cnn)
         spec_cnn = Dropout(dropout_rate)(spec_cnn)
         print(spec_cnn)
-    #print(spec_cnn)
+    # print(spec_cnn)
     spec_cnn = Permute((2, 1, 3))(spec_cnn)
-    #print(spec_cnn)
+    # print(spec_cnn)
     spec_rnn = Reshape((data_in[-2], -1))(spec_cnn)
-    #print(spec_rnn)
+    # print(spec_rnn)
     for nb_rnn_filt in rnn_size:
         spec_rnn = Bidirectional(
             QuaternionGRU(units=nb_rnn_filt, activation='tanh', dropout=dropout_rate, recurrent_dropout=dropout_rate,
-                return_sequences=True),
+                          return_sequences=True),
             merge_mode='mul'
         )(spec_rnn)
-    
+
     doa = spec_rnn
     for nb_fnn_filt in fnn_size:
         doa = TimeDistributed(QuaternionDense(nb_fnn_filt))(doa)
@@ -73,5 +75,7 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     model = Model(inputs=spec_start, outputs=[sed, doa])
     model.compile(optimizer=Adam(), loss=['binary_crossentropy', 'mse'], loss_weights=weights)
 
-    model.summary()
+    if (summary == True):
+        model.summary()
+
     return model
