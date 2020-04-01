@@ -29,21 +29,21 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
               rnn_size, fnn_size, classification_mode, weights, summary):
     # model definition
     spec_start = Input(shape=(data_in[-2], data_in[-1], data_in[-3]))
-    print("start input:", spec_start)
+    #print("start input:", spec_start)
     spec_cnn = spec_start
     for i, convCnt in enumerate(pool_size):
-        print(spec_cnn)
+        #print(spec_cnn)
         spec_cnn = QuaternionConv2D(filters=nb_cnn2d_filt, kernel_size=(3, 3), data_format='channels_last',
                                     padding='same')(spec_cnn)
-        print(spec_cnn)
+        #print(spec_cnn)
         spec_cnn = BatchNormalization()(spec_cnn)
-        print(spec_cnn)
+        #print(spec_cnn)
         spec_cnn = Activation('relu')(spec_cnn)
-        print(spec_cnn)
+        #print(spec_cnn)
         spec_cnn = MaxPooling2D(pool_size=(1, pool_size[i]))(spec_cnn)
-        print(spec_cnn)
+        #print(spec_cnn)
         spec_cnn = Dropout(dropout_rate)(spec_cnn)
-        print(spec_cnn)
+        #print(spec_cnn)
     # print(spec_cnn)
     spec_cnn = Permute((2, 1, 3))(spec_cnn)
     # print(spec_cnn)

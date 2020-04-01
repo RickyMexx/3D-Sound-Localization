@@ -245,12 +245,12 @@ class TessarineGRUCell(Layer):
             x_z = K.dot(inputs_z, self.kernel_z)
             x_r = K.dot(inputs_r, self.kernel_r)
             x_h = K.dot(inputs_h, self.kernel_h)
-            print('ok')
+            #print('ok')
             if self.use_bias:
                 x_z = K.bias_add(x_z, self.input_bias_z)
                 x_r = K.bias_add(x_r, self.input_bias_r)
                 x_h = K.bias_add(x_h, self.input_bias_h)
-            print('ok')
+            #print('ok')
             if 0. < self.recurrent_dropout < 1.:
                 h_tm1_z = h_tm1 * rec_dp_mask[0]
                 h_tm1_r = h_tm1 * rec_dp_mask[1]
