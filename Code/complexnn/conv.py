@@ -164,7 +164,7 @@ class QuaternionConv(Layer):
                              'should be defined. Found `None`.')
         
         input_dim = input_shape[channel_axis] // 4
-        print("input_dim:",input_dim)
+        #print("input_dim:",input_dim)
         self.kernel_shape = self.kernel_size + (input_dim , self.filters)
         
         if self.kernel_initializer in {'quaternion'}:
@@ -290,20 +290,20 @@ class QuaternionConv(Layer):
         # Set input spec.
         self.input_spec = InputSpec(ndim=self.rank + 2,
                                     axes={channel_axis: input_dim * 4})
-        print("input_spec:", self.input_spec)
+        #print("input_spec:", self.input_spec)
         self.built = True
 
     def call(self, inputs):
         channel_axis = 1 if self.data_format == 'channels_first' else -1
-        #print("inputs:", K.shape(inputs))
+        ##print("inputs:", K.shape(inputs))
         #input_dim       = K.shape(inputs)[channel_axis] // 4
         input_dim = inputs.shape[channel_axis]//4
-        print("input dim:", input_dim)
+        #print("input dim:", input_dim)
         index2 = self.filters*2
         index3 = self.filters*3
-        print("filters:", self.filters)
-        print("index 2:", index2)
-        print("index 3:", index3)
+        #print("filters:", self.filters)
+        #print("index 2:", index2)
+        #print("index 3:", index3)
         if self.rank == 1:
             f_r   = self.kernel[:, :, :self.filters]
             f_i   = self.kernel[:, :, self.filters:index2]
@@ -337,26 +337,26 @@ class QuaternionConv(Layer):
         f_i._keras_shape = self.kernel_shape
         f_j._keras_shape = self.kernel_shape
         f_k._keras_shape = self.kernel_shape
-        print("f rijk:", f_r,f_i,f_j,f_k)
+        #print("f rijk:", f_r,f_i,f_j,f_k)
 
         cat_kernels_4_r = K.concatenate([f_r, -f_i, -f_j, -f_k], axis=-2)
         cat_kernels_4_i = K.concatenate([f_i, f_r, -f_k, f_j], axis=-2)
         cat_kernels_4_j = K.concatenate([f_j, f_k, f_r, -f_i], axis=-2)
         cat_kernels_4_k = K.concatenate([f_k, -f_j, f_i, f_r], axis=-2)
         cat_kernels_4_quaternion = K.concatenate([cat_kernels_4_r, cat_kernels_4_i, cat_kernels_4_j, cat_kernels_4_k], axis=-1)
-        print("cat kern rijk:", cat_kernels_4_r, cat_kernels_4_i, cat_kernels_4_j, cat_kernels_4_k )
-        print("cat kern:", cat_kernels_4_quaternion)
-        print("input_dim:", input_dim)
+        #print("cat kern rijk:", cat_kernels_4_r, cat_kernels_4_i, cat_kernels_4_j, cat_kernels_4_k )
+        #print("cat kern:", cat_kernels_4_quaternion)
+        #print("input_dim:", input_dim)
         cat_kernels_4_quaternion._keras_shape = self.kernel_size + (4 * input_dim, 4 * self.filters)
-        print("kernel size:", self.kernel_size)
-        print("input dim:",input_dim)
-        print("4*input dim:", 4*input_dim)
-        print("filters:", self.filters)
-        print("4*filter:",4*self.filters)
-        print("cat kern shape:", cat_kernels_4_quaternion._keras_shape)
+        #print("kernel size:", self.kernel_size)
+        #print("input dim:",input_dim)
+        #print("4*input dim:", 4*input_dim)
+        #print("filters:", self.filters)
+        #print("4*filter:",4*self.filters)
+        #print("cat kern shape:", cat_kernels_4_quaternion._keras_shape)
         
         output = convFunc(inputs, cat_kernels_4_quaternion, **convArgs)
-        print("output:", output)
+        #print("output:", output)
 
         if self.use_bias:
             output = K.bias_add(
