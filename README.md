@@ -10,7 +10,7 @@ Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Envir
 | --- | --- |
 | A | training_loss |
 | B | validation_loss |
-| C | sed_los_er |
+| C | sed_loss_er |
 | D | sed_loss_f1 |
 | E | doa_loss_avg_accuracy |
 | F | doa_loss_gt |
@@ -26,7 +26,7 @@ Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Envir
 | K | sed_score |
 | L | doa_score |
 | M | seld_score |
-| N | doa_confidence_interval__low |
+| N | doa_confidence_interval_low |
 | O | doa_confidence_interval_median |
 | P | doa_confidence_interval__up |
 | Q | sed_confidence_interval_low |
