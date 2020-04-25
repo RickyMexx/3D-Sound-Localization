@@ -3,7 +3,7 @@
 % Call the style package
 %\usepackage{fun3style}
 
-\title{Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Environments: Implementation with First Order Ambisonics}
+\title{Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Environments: Implementation using First Order Ambisonics}
 \author{Roberto Aureli, ID 1757131\\
 		Riccardo Caprari, ID 1743168\\
 		Gianmarco Fioretti, ID 1762135}
@@ -74,7 +74,7 @@ Many recent works have proven that deep quaternion neural networks are able to i
 
 Our main work consisted in adapting the provided code to the new dataset, fine-tuning the model's hyper-parameters, applying the three metrics defined in the 2019 paper  (TO ADD REFERENCE) (\textbf{SED, DOA, SELD}), implementing the direction of arrival estimation in spherical coordinates, and computing the confidence intervals on the model's final errors as defined in the 2018 paper (TO ADD REFERENCE) in order to add also a statistical evaluation on final results.
 
-
+\newpage
 \section{Dataset}\label{cha:data}
 
 The network is trained with the \textbf{TAU Spatial Sound Events 2019} dataset which provides four-channel directional microphone recordings of stationary point sources.\\
@@ -105,7 +105,7 @@ Moreover, in order to improve the performance over new sound events, and to make
 	\label{table:classes}
 \end{table}
 
-
+\newpage
 \section{Architecture}\label{cha:arch}
 
 The network proposed in the 2020 paper (TO ADD REFERENCE) involves a series of convolutional layers in the quaternion domains, they are composed of several filter kernels which allow learning inter-channel features, with subsequent activation functions (TO FILL) and max-pooling functions. The output of this series are properly reshaped and fed to bidirectional quaternion recurrent layers. This first part of the architecture is depicted in Figure \ref{fig:arch1}
@@ -125,21 +125,73 @@ As already pointed out on Chapter \ref{cha:intro} the network has been modified 
 	\label{fig:arch2}
 \end{figure}
 
+\newpage
+\section{Our work}
 
-\section{OUR WORK}
+The objective of our work is to build a working SELDnet based network that works with First Order Ambisonics data sets. In particular, we are going to extend SELDnet, adding capabilities to both support pre-existing data sets (ansim, resim, etc.) and the FOA one in a smart, modular, performing way. Other metrics have been added like the SELD score, mainly used in the paper (rif) outcomes evaluation and a tiny library for a graphical representation of the results. Now we'll proceed with a more technical analysis of the work, listing all the features added.
 
-TO ADD OUR WORK
+\subsection{Project architecture}
+We decided to mantain a parameters manager file to configure the SELDnet, like it's input dataset with specific values, training, evaluation and test process combinations and many other settings which can be found in \textit{parameter.py}. We can divide our project in 3 main classical phases: extraction, training and test.
+
+\noindent\textbf{Extraction}
+
+Before starting with the training, we have to extract features from the new FOA data set. This delicate process makes the difference between a successful training in terms of evaluation metrics. For this reason we decided to introduce a new \textit{FeatureClass}, which will differ from the old one in some parameters and procedures. In fact, as we experienced, introducing a new similar class results in a way more readable, modifiable and modulariable approach. We noticed, in fact, that different data sets can be similar from a structure point of view and totally different with respect to their parameters, like record settings. For this reason a new full-dedicated extractor results in a wise and fast choice.
+
+As we can observe in scheme \ref{fig:extraction}, \textit{batch\_feature\_extraction.py} has the task of managing the extraction process, differing function calls with respect to data set type. The input is divided into two folders, \textit{foa\_dev} and \textit{metadata\_dev}, which contains audio records stored with a \textit{.wav} format and their corresponding labels.
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=12.5cm]{img/extraction.png}
+	\caption{Extraction process.}
+	\label{fig:extraction}
+\end{figure}
 
 
+Let's now zoom in the new \textit{cls\_feature\_extr.py} extractor and highlight the main differences with the old \textit{FeatureClass}.
+
+
+\newpage
+\noindent\textbf{Training}
+
+\noindent\textbf{Test}
+
+\noindent\textbf{Summary}
+
+
+\newpage
 \section{Results}\label{cha:res}
 
-TO ADD RESULTS
+Speak about metrics and comment results...
 
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=10cm]{img/loss.png}
+	\caption{Loss function over 100 epochs.}
+	\label{fig:loss}
+\end{figure}
+
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=10cm]{img/scores.png}
+	\caption{Sed, Doa and Seld scores over 100 epochs.}
+	\label{fig:scores}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=10cm]{img/er_f1.png}
+	\caption{Sed error rate and f1-score over 100 epochs.}
+	\label{fig:erf1}
+\end{figure}
+
+
+\newpage
 \section{Conclusions}\label{cha:conc}
 
 TO ADD CONCLUSIONS
 
-\newpage
+
 
 TO ADD REFERENCES
 
