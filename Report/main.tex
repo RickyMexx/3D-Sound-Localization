@@ -29,7 +29,6 @@
 \usepackage{hyperref}
 \usepackage{listings}
 
-
 \usepackage{caption}
 
 
@@ -68,20 +67,27 @@
 
 This project addresses the \textbf{3D Sound Event Localization and Detection Task} in reverberant environments with a  quaternion neural network (deep neural network with quaternion input features extracted from the acoustic intensity vector).\newline
 
-As mentioned above, the proposed model performs both sound localization and sound event detection and subsequent classification. In particular it follows the architecture described in 2020 paper (TO ADD REFERENCE) which allows to estimate the three-dimensional direction of arrivals (DOA), in addition, it has been modified in order to be capable of detecting sound events and estimating the corresponding sources (eleven different classes provided by the development dataset, check for Table \ref{table:classes}).\newline
+\noindent
+As mentioned above, the proposed model performs both sound localization and sound event detection and subsequent classification. In particular it follows the architecture described in paper \cite{paper2020} which allows to estimate the three-dimensional direction of arrivals (DOA), in addition, it has been modified in order to be capable of detecting sound events and estimating the corresponding sources (eleven different classes provided by the development dataset, check for Table \ref{table:classes}).\newline
 
-Many recent works have proven that deep quaternion neural networks are able to improve localization performances dramatically, especially in reverberant and noisy environments, thanks to spatial harmonic decomposition which permits to exploit the intrinsic correlation of the ambisonics signal components. One of the main aspect to be considered is the input features to be passed to the network (TO FILL).\newline
+\noindent
+Many recent works have proven that deep quaternion neural networks are able to improve localization performances dramatically, especially in reverberant and noisy environments, thanks to spatial harmonic decomposition which permits to exploit the intrinsic correlation of the ambisonics signal components. One of the main aspect to be considered is the input features to be passed to the network.\newline
 
-Our main work consisted in adapting the provided code to the new dataset, fine-tuning the model's hyper-parameters, applying the three metrics defined in the 2019 paper  (TO ADD REFERENCE) (\textbf{SED, DOA, SELD}), implementing the direction of arrival estimation in spherical coordinates, and computing the confidence intervals on the model's final errors as defined in the 2018 paper (TO ADD REFERENCE) in order to add also a statistical evaluation on final results.
+\noindent
+Our main work consisted in adapting the provided code to the new dataset, fine-tuning the model's hyper-parameters, applying the three metrics defined in a precedent paper \cite{paper2019} (\textbf{SED, DOA, SELD}), implementing the direction of arrival estimation in spherical coordinates, and computing the confidence intervals on the model's final errors as defined in Perotin et al. paper \cite{paper2018} in order to add also a statistical evaluation on final results.
 
 \newpage
 \section{Dataset}\label{cha:data}
 
-The network is trained with the \textbf{TAU Spatial Sound Events 2019} dataset which provides four-channel directional microphone recordings of stationary point sources.\\
-It is a balanced dataset, it indeed consists of eleven classes, each with twenty examples that were randomly split into five sets with an equal number of examples for each class, in addition, it was divided into four cross-validation split.\\
+The network is trained with the \textbf{TAU Spatial Sound Events 2019} dataset which provides four-channel directional microphone recordings of stationary point sources.
+
+\noindent
+It is a balanced dataset, it indeed consists of eleven classes, each with twenty examples that were randomly split into five sets with an equal number of examples for each class, in addition, it was divided into four cross-validation split.
+
+\noindent
 The maximum number of simultaneously overlapping sources are two.\\
 Moreover, in order to improve the performance over new sound events, and to make a more realistic scenario, natural ambient noise collected in the recording locations was added to the synthesized recordings in the dataset such that the average SNR of the sound events was 30 dB.
-
+\newline
 \begin{table}[ht]
 	\caption{TAU Spatial Sound Events Classes}
 	\centering
@@ -108,7 +114,7 @@ Moreover, in order to improve the performance over new sound events, and to make
 \newpage
 \section{Architecture}\label{cha:arch}
 
-The network proposed in the 2020 paper (TO ADD REFERENCE) involves a series of convolutional layers in the quaternion domains, they are composed of several filter kernels which allow learning inter-channel features, with subsequent activation functions (TO FILL) and max-pooling functions. The output of this series are properly reshaped and fed to bidirectional quaternion recurrent layers. This first part of the architecture is depicted in Figure \ref{fig:arch1}
+The network proposed in the paper \cite{paper2020} involves a series of convolutional layers in the quaternion domains, they are composed of several filter kernels which allow learning inter-channel features, with subsequent activation functions and max-pooling functions. The output of this series are properly reshaped and fed to bidirectional quaternion recurrent layers. This first part of the architecture is depicted in Figure \ref{fig:arch1}
 
 \begin{figure}[ht]
 	\includegraphics[width=\linewidth]{img/arch1.png}
@@ -116,6 +122,7 @@ The network proposed in the 2020 paper (TO ADD REFERENCE) involves a series of c
 	\label{fig:arch1}
 \end{figure}
 
+\noindent
 As already pointed out on Chapter \ref{cha:intro} the network has been modified accordingly, the final part of architecture therefore becomes as in Figure \ref{fig:arch2}, so that network is able to perform a multi-classification for the SED task (one for each class: 1 to indicate detection, 0 otherwise) and multi-regressions for DOA task (one for the azimuth angle, one for the elevation angle and one for the distance.
 
 \begin{figure}[ht]
@@ -128,16 +135,21 @@ As already pointed out on Chapter \ref{cha:intro} the network has been modified 
 \newpage
 \section{Our work}
 
-The objective of our work is to build a working SELDnet based network that works with First Order Ambisonics data sets. In particular, we are going to extend SELDnet, adding capabilities to both support pre-existing data sets (ansim, resim, etc.) and the FOA one in a smart, modular, performing way. Other metrics have been added like the SELD score, mainly used in the paper (rif) outcomes evaluation and a tiny library for a graphical representation of the results. Now we'll proceed with a more technical analysis of the work, listing all the features added.
+The objective of our work is to build a working SELDnet based network that works with First Order Ambisonics data sets. In particular, we are going to extend SELDnet, adding capabilities to both support pre-existing data sets (ansim, resim, etc.) and the FOA one in a smart, modular, performing way. Other metrics have been added like the SELD score, mainly used in the paper \cite{paper2018} outcomes evaluation, and a tiny library for a graphical representation of the results. Now we'll proceed with a more technical analysis of the work, listing all the features added.
 
-\subsection{Project architecture}
-We decided to mantain a parameters manager file to configure the SELDnet, like it's input dataset with specific values, training, evaluation and test process combinations and many other settings which can be found in \textit{parameter.py}. We can divide our project in 3 main classical phases: extraction, training and test.
+\subsection{Project implementation}
+We decided to mantain a parameters manager file to configure the SELDnet, which contains for example it's input dataset with specific values, training, evaluation and test process combinations and many other settings that can be found in \textit{parameter.py}. We can divide our project in 3 main classical phases: extraction, training and test. We will cover these three parts after highlighting the main changes on input parameters:
 
-\noindent\textbf{Extraction}
+\begin{itemize}
+\item \textit{parameter.py}: extension of \textit{quick\_test} parameters supporting now batch and steps size. Support for data sets and extraction output directiories paths. New training management handling different splits also for validation and test evaluation.
+\end{itemize}
 
-Before starting with the training, we have to extract features from the new FOA data set. This delicate process makes the difference between a successful training in terms of evaluation metrics. For this reason we decided to introduce a new \textit{FeatureClass}, which will differ from the old one in some parameters and procedures. In fact, as we experienced, introducing a new similar class results in a way more readable, modifiable and modulariable approach. We noticed, in fact, that different data sets can be similar from a structure point of view and totally different with respect to their parameters, like record settings. For this reason a new full-dedicated extractor results in a wise and fast choice.
+\subsubsection{Extraction}
 
-As we can observe in scheme \ref{fig:extraction}, \textit{batch\_feature\_extraction.py} has the task of managing the extraction process, differing function calls with respect to data set type. The input is divided into two folders, \textit{foa\_dev} and \textit{metadata\_dev}, which contains audio records stored with a \textit{.wav} format and their corresponding labels.
+Before starting with the training, we have to extract features from the new FOA data set. This delicate process makes the difference between a successful training in terms of evaluation metrics. For this reason we decided to introduce a new \textit{FeatureClass}, which will differ from the old one in some parameters and procedures. In fact, as we experienced, introducing a new similar class results in a way more readable, modifiable and modularizable approach. We noticed, in fact, that different data sets can be similar from a structure point of view and totally different with respect to their parameters, like record settings. For this reason a new full-dedicated extractor results in a wise and faster-implementation choice.
+
+\noindent
+As we can observe in scheme \ref{fig:extraction}, \textit{batch\_feature\_extraction.py} has the task of managing the extraction process, differing function calls with respect to data set type. The input is divided into two folders, \textit{foa\_dev} and \textit{metadata\_dev}, which contain audio records stored with a \textit{.wav} format and their corresponding labels.
 
 \begin{figure}[h!]
 	\centering
@@ -146,22 +158,88 @@ As we can observe in scheme \ref{fig:extraction}, \textit{batch\_feature\_extrac
 	\label{fig:extraction}
 \end{figure}
 
+\noindent
+Let's now zoom in the new \textit{cls\_feature\_extr.py} extractor and highlight the main differences with the other one. These are the most significant adjustments:
 
-Let's now zoom in the new \textit{cls\_feature\_extr.py} extractor and highlight the main differences with the old \textit{FeatureClass}.
+\begin{itemize}
+	\item \textit{FeatureClass()}: changes on hop length, which are the number of audio samples between adjacent STFT columns; win length, which windows each audio frame by a certain number; nfft has been changed and chosen to fit win length taking the next greater power of 2; new data set output folder management.
+	\item \textit{spectrogram()}: use of \textit{librosa} library for the short-time Fourier trasform taking a cue from \cite{git}. Then we cycled over the number of channels to get the stft and transpose it to compose the final spectra. After, we loaded each audio file, extracted its spectogram and subsequently saved in a \textit{.npy} format.
+	\item \textit{preprocess\_features()}: use of \textit{StandardScaler} which is in charge of standardizing the features. Adding partial fit of the scaler in order to compute mean and std of the precedent computed feature files.
+	\item \textit{extract\_all\_labels()}: weakness and mode parameters have been remove; slight edit on get labels process.
+\end{itemize}
 
+\noindent
+After the extraction has been done we will deal with three new different folders inside \textit{/feat\_label\_tmp}, which contain \textit{.npy} files. Here is a list of them: 
+
+\begin{itemize}
+	\item \textit{foa\_dev\_label}: storing labels.
+	\item \textit{foa\_dev\_norm}: which stores normalized features.
+	\item \textit{foa\_dev}: which stores unnormalized features.
+\end{itemize}
+
+
+
+\subsubsection{Training}\label{minisec:train}
+
+After the process of features extraction is completed we can proceed with the training. Unlike for the extraction, in this phase we introduced some changes to both manage foa data sets and old ones instead of adding a completely new \textit{seld.py}. In particular, we highlight differences on:
+
+\begin{itemize}
+	\item \textit{cls\_data\_generator.py}: new split handler system, in \textit{\_get\_label\_filenames\_sizes()} we added support for train and validation$/$test splits which has as objective to create a correct file list. All the files are now taken according to \textit{parameter.py} settings, which specify the number of the splits. Adding check control for circular buffers in generator's \textit{generate()} base function in case pop operations exceed buffer size. 
+	\item \textit{seld.py}: new batch and step control for quick tests; changing \textit{unique\_name} for model weights data saving; new smart resumption of training if weights are present in \textit{/model} folder; new important \textbf{bug-solving} procedure to let \textit{predict\_generator()} work correctly, which consists of creating the model, save it and reload it with old weights before a prediction occurs; new confidence interval calculator for DOA and SED errors; adding SELD to the scores and saving all of them in a csv file.
+	\item \textit{evaluation\_metrics.py}: adding \textit{compute\_confidence()} function to compute 95\% confidence interval given an array of data. Implementation based on \cite{confint}.
+	\item \textit{simple\_plotter.py}: new file which can be used for csv saving, metrics 2D plotting and data prediction 3D plotting.
+\end{itemize}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=13.5cm]{img/training.png}
+	\caption{Training process.}
+	\label{fig:training}
+\end{figure}
+
+\noindent
+In figure \ref{fig:training} it's possible to have a general view of \textit{seld.py} in action. During the training we fit the model using a data train set and then, for each epoch, we use another smaller set as validation to compute all the necessary metrics. These metrics are then saved in a csv file in a consecutive way, meaning that each line corresponds to an epoch. Then, apart from \textit{seld.py}, we generate all the plots which will be discussed in Chapter \ref{cha:res}.
 
 \newpage
-\noindent\textbf{Training}
+\subsubsection{Test}
 
-\noindent\textbf{Test}
+Finally, we end up with test phase. This part wasn't really handled from the original code so we decided to add it to have a full final evaluation of a different set. In fact, by adding a new split in \textit{parameter.py}, we are able to load weights of a pre-trained model and then make a full test using it. This part, like for the training one, includes all the evaluation metrics, confidence intervals and plots making.
 
-\noindent\textbf{Summary}
+In particular, the new included file for testing is \textit{seld\_test.py}. This program involves the creation of a new model whose weights are loaded from a trained one, two data generators (train + test) and a single prediction using \textit{Keras} library.
+
+
+\subsubsection{Summary}
+
+Recapping, this is an overview of the introduced and changed files:
+
+\begin{tabular}{cp{0.6\textwidth}}
+  New:\\  
+  $+$ & batch\_feature\_extr.py \\
+  $+$ & simple\_plotter.py \\
+  $+$ & seld\_test.py \\
+  \\
+  Changed:\\
+  $\thicksim$ & parameter.py\\
+  $\thicksim$ & batch\_feature\_extraction.py\\
+  $\thicksim$ & cls\_data\_generator.py\\
+  $\thicksim$ & seld.py\\
+  $\thicksim$ & evaluation\_metrics.py\\
+  \\
+  Removed:\\
+  $---$ 
+\end{tabular}\\
 
 
 \newpage
 \section{Results}\label{cha:res}
 
-Speak about metrics and comment results...
+The First Order Ambisonics data set we are going to use is divided into four different splits. We decided to use splits 3 and 4 for the training process, split 2 for the validation and split 1 for a final test. In order to obtain substantial results we trained the model for 100 epochs with a \textit{batch\_size} equal to 16 using \textit{Tesla K80} GPU from Google Colab.
+
+\noindent
+Initially, we were obtaing results with a really low accuracy even after plenty of epochs. This was caused by a Keras bug related to the use of \textit{fit\_generator()} and \textit{predict\_generator()} functions. However, we managed to solve this as explained in training part (\ref{minisec:train}). 
+
+\noindent
+We present, through different plots, the results obtained using this specific combination of splits and the new implementation of the project. The first analysis we are going to conduct is the loss function. In Fig. \ref{fig:loss} it's possible to see how training and validation loss decrease almost monotonically. The gap between the two functions is really small in the first 30/40 epochs and tends to grow in the second part. However, we can say that overfitting is relatively small and doesn't influence results in a particular way.
 
 \begin{figure}[h!]
 	\centering
@@ -170,6 +248,17 @@ Speak about metrics and comment results...
 	\label{fig:loss}
 \end{figure}
 
+\noindent
+A second plot we decided to produce and comment out is the one showing the main scores over the epochs. Specifically, these scores are DOA (Direction Of Arrival), SED (Sound Event Detection) and SELD (Sound Event Localization Detection). We compute them as:
+
+$S_{SED} = \frac{ER + (1-F)}{2}$ \space\space
+$S_{DOA} = \frac{\frac{DOA_{err}}{180} + (1-K)}{2}$ \space\space
+$S_{SELD} = \frac{S_{SED} + S_{DOA}}{2}$ \space\space
+
+\noindent
+in which $ER$ is the SED error rate and $F$ is the f1-score; $DOA_{err}$ is the DOA estimation error and $K$ is the recall which takes into account true positives.
+
+Observing Fig. \ref{fig:scores} and Fig. \ref{fig:erf1} it's possible to see the behavior of the scores with the addtion of F and ER SED's terms over 100 epochs. In the almost first 10 epochs the error rate ER is fixed to 1 which means that the model is predicting wrong with a percentage of 100\%. On the other hand, f1-score is obviously fixed to zero because of the completely wrong predictions. These two terms results in an overall SED score fixed to one. In fact, the smaller these scores results the better they are. We can notice that as soon ER and F moves respectively from 1 and 0, SED scores starts to decrease rapidly.
 
 \begin{figure}[h!]
 	\centering
@@ -178,6 +267,7 @@ Speak about metrics and comment results...
 	\label{fig:scores}
 \end{figure}
 
+\newpage
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=10cm]{img/er_f1.png}
@@ -185,14 +275,109 @@ Speak about metrics and comment results...
 	\label{fig:erf1}
 \end{figure}
 
+\noindent
+This overview is the same for DOA score which starts with a value of 0.5 and starts to decrease in a same fashion. Due to that SELD will behave in the same way, being an average of the precedent two scores.
+
+\noindent
+We finally ended up with these training scores:
+
+\begin{center}
+\begin{tabular}{cp{0.6\textwidth}}
+$S_{DOA} = 0.31$ \space\space $S_{SED} = 0.29$ \space\space $S_{SELD} = 0.30$
+\end{tabular}
+\end{center}
+
+\noindent
+After a full training we decided then to test the remaining split (1) using the new \textit{seld\_test.py} program. Here we report outcomes evaluated with several evaluation metrics:
+\begin{center}
+\begin{tabular}{cp{0.6\textwidth}}
+$precision = 0.80$ \space\space $recall = 0.68$\\
+$S_{DOA} = 0.24$ \space\space $S_{SED} = 0.29$ \space\space $S_{SELD} = 0.26$\\
+\\
+Error confidence intervals (95\%):\\
+$SED: [0.014039, 0.014361]$, median 0.014179, displacement $\pm$0.000181\\
+$DOA: [0.000000, -0.001624]$, median -0.001689, displacement $\pm$0.000065
+
+\end{tabular}
+\end{center}
 
 \newpage
-\section{Conclusions}\label{cha:conc}
+\noindent
+With the precedent results we decided to introduce a new tool to better visualize and understand in a geometric way what is really happening: 3D-plotting. Using predictions from \textit{predict\_generator()}, we made a comparison with ground truth values, finding a spatial meaning for our results. In particular, we used random sampling in both pred and gt sets to give a better look on what's happening (plotting thousand of points may look terrible and counterintuitive). To be exact, we chose 200 points per class.
 
-TO ADD CONCLUSIONS
+\noindent
+In Fig. \ref{fig:plot_doa} there is a first 3D-plot for DOA predictions, which are placed on the left. On the right it's possible to see how ground truth points are affected by the presence of outliers, which are not always well predicted by the model and, by the fact, suffers from. Further observing, it seems that the number of points in the two frames is different: this is just a perception due to the fact that many ground truth points overlap while those on the left are badly predicted.
+
+\begin{figure}[h!]
+	\centering
+	\hspace*{-2.5cm}
+	\includegraphics[width=17.7cm]{img/plot_doa.jpg}
+	\caption{(Left) DOA prediction points \\ \hspace{1cm} (Right) DOA ground truth points}
+	\label{fig:plot_doa}
+\end{figure}
+
+\noindent
+We made then other two plots, Fig. \ref{fig:plot_labels} and Fig. \ref{fig:plot_3labels}, which are the combination of DOA and SED. In the first one all the classes have been plotted to get a total overview and behaviour of the network. The second one refers to 3 classes only to better understand predictions in a smaller set of points.
+
+\newpage
+\begin{figure}[h!]
+	\centering
+	\hspace*{-2.5cm}
+	\includegraphics[width=17.7cm]{img/plot_labels.jpg}
+	\caption{(Left) SELD prediction points\\ (Right) SELD ground truth points}
+	\label{fig:plot_labels}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\hspace*{-2.5cm}
+	\includegraphics[width=17.7cm]{img/plot_3labels.jpg}
+	\caption{(Left) SELD prediction points for 3 classes\\ (Right) SELD ground truth points for 3 classes}
+	\label{fig:plot_3labels}
+\end{figure}
 
 
+\newpage
+\section{Conclusion}\label{cha:conc}
 
-TO ADD REFERENCES
+Main objective of this work was to let the SELDnet project work with different type of data sets, in particular the First Order Ambisonics TAU Spatial Sound Events 2019. We managed to deal with it starting from three main papers (\cite{paper2020}, \cite{paper2019}, \cite{paper2018}) and understanding how SELDnet works.
+
+\noindent
+We tried not to find the easiest solution but one of the most optimized and better performing ones. We proceeded with a technical analysis of the code and a training process to allow us producing valid results. In a second part we presented different plots of our outcomes to realize and comment out how the network is performing. 
+
+\noindent
+We consider ourselves satisfied with the results obtained. We didn't deal with a specific study of the network and its architecture but we leave this as a future work.
+
+
+\newpage
+\begin{thebibliography}{999}
+
+\bibitem{paper2020}
+  Michela Ricciardi Celsi, Simone Scardapane and Danilo Comminiello,
+  \emph{Quaternion Neural Networks for 3D Sound Source
+Localization in Reverberant Environments},
+  DIET Dept., Sapienza University of Rome,
+  2020.
+
+\bibitem{paper2019}
+  Danilo Comminiello, Marco Lella, Simone Scardapane, and Aurelio Uncini,
+  \emph{Quaternion Convolutional Neural Networks
+For Detection And Localization Of 3D Sound Events},
+  DIET Dept., Sapienza University of Rome,
+  2019.
+
+\bibitem{paper2018}
+  Lauréline Perotin, Romain Serizel, Emmanuel Vincent and Alexandre Guérin,
+  \emph{CRNN-based multiple DoA estimation using Ambisonics
+acoustic intensity features}, Submited to the IEEE Journal of Selected
+Topics in Signal Processing, Special Issue on Acoustic S.. 2018.
+  
+\bibitem{git}
+  \href{https://github.com/sharathadavanne/seld-dcase2019}{Seld-dcase2019} (Link)
+  
+\bibitem{confint}
+  \href{https://machinelearningmastery.com/confidence-intervals-for-machine-learning/}{Confidence Intervals for Machine Learning} (Link)
+
+\end{thebibliography}
 
 \end{document}

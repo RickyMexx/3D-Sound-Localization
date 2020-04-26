@@ -2,6 +2,10 @@
 \BOOKMARK [1][-]{section.2}{Dataset}{}% 2
 \BOOKMARK [1][-]{section.3}{Architecture}{}% 3
 \BOOKMARK [1][-]{section.4}{Our work}{}% 4
-\BOOKMARK [2][-]{subsection.4.1}{Project architecture}{section.4}% 5
-\BOOKMARK [1][-]{section.5}{Results}{}% 6
-\BOOKMARK [1][-]{section.6}{Conclusions}{}% 7
+\BOOKMARK [2][-]{subsection.4.1}{Project implementation}{section.4}% 5
+\BOOKMARK [3][-]{subsubsection.4.1.1}{Extraction}{subsection.4.1}% 6
+\BOOKMARK [3][-]{subsubsection.4.1.2}{Training}{subsection.4.1}% 7
+\BOOKMARK [3][-]{subsubsection.4.1.3}{Test}{subsection.4.1}% 8
+\BOOKMARK [3][-]{subsubsection.4.1.4}{Summary}{subsection.4.1}% 9
+\BOOKMARK [1][-]{section.5}{Results}{}% 10
+\BOOKMARK [1][-]{section.6}{Conclusion}{}% 11
