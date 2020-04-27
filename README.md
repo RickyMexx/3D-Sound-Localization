@@ -1,8 +1,16 @@
 # 3D-Sound-Localization
-Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Environments.
+## Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Environments: Implementation using First Order Ambisonics.
+
+The objective of our work is to build a working SELDnet based network that works with First Order Ambisonics data sets. In particular, we are going to extend SELDnet, adding capabilities to both support pre-existing data sets (ansim, resim, etc.) and the FOA one in a smart, modular, performing way. Therefore, other metrics have been added like the SELD score, mainly used in the [2019 paper](https://github.com/RickyMexx/3D-Sound-Localization/blob/master/Papers/2019_Quaternion%20Convolutional%20Neural%20Networks%20for%20Detection%20and%20Localization%20of%203D%20Sound%20Events.pdf) outcomes evaluation, and a tiny library for a graphical representation of the results.
 
 
-## Model CSV table
+![doa](/Report/img/plot_doa.jpg)
+
+![seld](/Report/img/plot_labels.jpg)
+
+![seld3](/Report/img/plot_3labels.jpg)
+
+## Model metrics CSV table 
 <table>
 <tr><td>
 
@@ -34,5 +42,7 @@ Quaternion Neural Networks for 3D Sound Source Localization in Reverberant Envir
 | S | sed_confidence_interval_conf_up |
 
 </td></tr> </table>
+
+
 
 
