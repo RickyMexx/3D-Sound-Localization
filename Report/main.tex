@@ -135,7 +135,7 @@ As already pointed out on Chapter \ref{cha:intro} the network has been modified 
 \newpage
 \section{Our work}
 
-The objective of our work is to build a working SELDnet based network that works with First Order Ambisonics data sets. In particular, we are going to extend SELDnet, adding capabilities to both support pre-existing data sets (ansim, resim, etc.) and the FOA one in a smart, modular, performing way. Other metrics have been added like the SELD score, mainly used in the paper \cite{paper2018} outcomes evaluation, and a tiny library for a graphical representation of the results. Now we'll proceed with a more technical analysis of the work, listing all the features added.
+The objective of our work is to build a working SELDnet based network that works with First Order Ambisonics data sets. In particular, we are going to extend SELDnet, adding capabilities to both support pre-existing data sets (ansim, resim, etc.) and the FOA one in a smart, modular, performing way. Other metrics have been added like the SELD score, mainly used in the paper \cite{paper2019} outcomes evaluation, and a tiny library for a graphical representation of the results. Now we'll proceed with a more technical analysis of the work, listing all the features added.
 
 \subsection{Project implementation}
 We decided to mantain a parameters manager file to configure the SELDnet, which contains for example it's input dataset with specific values, training, evaluation and test process combinations and many other settings that can be found in \textit{parameter.py}. We can divide our project in 3 main classical phases: extraction, training and test. We will cover these three parts after highlighting the main changes on input parameters:
