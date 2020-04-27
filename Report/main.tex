@@ -8,7 +8,7 @@
 		Riccardo Caprari, ID 1743168\\
 		Gianmarco Fioretti, ID 1762135}
 
-\date{Neural Networks, Winter 2020}
+\date{Neural Networks, Spring 2020}
 
 
 
@@ -74,7 +74,7 @@ As mentioned above, the proposed model performs both sound localization and soun
 Many recent works have proven that deep quaternion neural networks are able to improve localization performances dramatically, especially in reverberant and noisy environments, thanks to spatial harmonic decomposition which permits to exploit the intrinsic correlation of the ambisonics signal components. One of the main aspect to be considered is the input features to be passed to the network.\newline
 
 \noindent
-Our main work consisted in adapting the provided code to the new dataset, fine-tuning the model's hyper-parameters, applying the three metrics defined in a precedent paper \cite{paper2019} (\textbf{SED, DOA, SELD}), implementing the direction of arrival estimation in spherical coordinates, and computing the confidence intervals on the model's final errors as defined in Perotin et al. paper \cite{paper2018} in order to add also a statistical evaluation on final results.
+Our main work consisted in adapting the provided code to the new dataset, fine-tuning the model's hyper-parameters, applying the three metrics defined in a precedent paper \cite{paper2019} (\textbf{SED, DOA, SELD}), implementing the direction of arrival estimation in cartesian coordinates, and computing the confidence intervals on the model's final errors as defined in Perotin et al. paper \cite{paper2018} in order to add also a statistical evaluation on final results.
 
 \newpage
 \section{Dataset}\label{cha:data}
@@ -123,7 +123,7 @@ The network proposed in the paper \cite{paper2020} involves a series of convolut
 \end{figure}
 
 \noindent
-As already pointed out on Chapter \ref{cha:intro} the network has been modified accordingly, the final part of architecture therefore becomes as in Figure \ref{fig:arch2}, so that network is able to perform a multi-classification for the SED task (one for each class: 1 to indicate detection, 0 otherwise) and multi-regressions for DOA task (one for the azimuth angle, one for the elevation angle and one for the distance.
+As already pointed out on Chapter \ref{cha:intro} the network has been modified accordingly, the final part of architecture therefore becomes as in Figure \ref{fig:arch2}, so that network is able to perform a multi-classification for the SED task (one for each class: 1 to indicate detection, 0 otherwise) and multi-regressions for DOA task (which has in input azimuth angle, elevation angle, distance and returns cartesian coordinates).
 
 \begin{figure}[ht]
 	\centering
@@ -258,7 +258,7 @@ $S_{SELD} = \frac{S_{SED} + S_{DOA}}{2}$ \space\space
 \noindent
 in which $ER$ is the SED error rate and $F$ is the f1-score; $DOA_{err}$ is the DOA estimation error and $K$ is the recall which takes into account true positives.
 
-Observing Fig. \ref{fig:scores} and Fig. \ref{fig:erf1} it's possible to see the behavior of the scores with the addtion of F and ER SED's terms over 100 epochs. In the almost first 10 epochs the error rate ER is fixed to 1 which means that the model is predicting wrong with a percentage of 100\%. On the other hand, f1-score is obviously fixed to zero because of the completely wrong predictions. These two terms results in an overall SED score fixed to one. In fact, the smaller these scores results the better they are. We can notice that as soon ER and F moves respectively from 1 and 0, SED scores starts to decrease rapidly.
+Observing Fig. \ref{fig:scores} and Fig. \ref{fig:erf1} it's possible to see the behavior of the scores with the addition of F and ER SED's terms over 100 epochs. In the almost first 10 epochs the error rate ER is fixed to 1 which means that the model is predicting wrong with a percentage of 100\%. On the other hand, f1-score is obviously fixed to zero because of the completely wrong predictions. These two terms results in an overall SED score fixed to one. In fact, the smaller these scores results the better they are. We can notice that as soon ER and F moves respectively from 1 and 0, SED scores starts to decrease rapidly.
 
 \begin{figure}[h!]
 	\centering
@@ -283,7 +283,7 @@ We finally ended up with these training scores:
 
 \begin{center}
 \begin{tabular}{cp{0.6\textwidth}}
-$S_{DOA} = 0.31$ \space\space $S_{SED} = 0.29$ \space\space $S_{SELD} = 0.30$
+$S_{DOA} = 0.31$ \space\space $S_{SED} = 0.25$ \space\space $S_{SELD} = 0.28$
 \end{tabular}
 \end{center}
 
@@ -295,8 +295,8 @@ $precision = 0.80$ \space\space $recall = 0.68$\\
 $S_{DOA} = 0.24$ \space\space $S_{SED} = 0.29$ \space\space $S_{SELD} = 0.26$\\
 \\
 Error confidence intervals (95\%):\\
-$SED: [0.014039, 0.014361]$, median 0.014179, displacement $\pm$0.000181\\
-$DOA: [0.000000, -0.001624]$, median -0.001689, displacement $\pm$0.000065
+SED: $[0.014039, 0.014361]$, median 0.014179, displacement $\pm$0.000181\\
+DOA: $[0.000000, -0.001624]$, median -0.001689, displacement $\pm$0.000065
 
 \end{tabular}
 \end{center}
@@ -343,10 +343,10 @@ We made then other two plots, Fig. \ref{fig:plot_labels} and Fig. \ref{fig:plot_
 Main objective of this work was to let the SELDnet project work with different type of data sets, in particular the First Order Ambisonics TAU Spatial Sound Events 2019. We managed to deal with it starting from three main papers (\cite{paper2020}, \cite{paper2019}, \cite{paper2018}) and understanding how SELDnet works.
 
 \noindent
-We tried not to find the easiest solution but one of the most optimized and better performing ones. We proceeded with a technical analysis of the code and a training process to allow us producing valid results. In a second part we presented different plots of our outcomes to realize and comment out how the network is performing. 
+We tried not to find the easiest solution but one of the most optimized and better-performing ones. We proceeded with a technical analysis of the code and a training process to allow us to produce valid results. In the second part, we presented different plots of our outcomes to realize and comment out how the network is performing. 
 
 \noindent
-We consider ourselves satisfied with the results obtained. We didn't deal with a specific study of the network and its architecture but we leave this as a future work.
+We consider ourselves satisfied with the results obtained. We didn't deal with a specific study of the network and its architecture but we leave this as future work.
 
 
 \newpage

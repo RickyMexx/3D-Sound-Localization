@@ -12,8 +12,8 @@ import keras_model
 import parameter
 import utils
 import time
-import plotter_saver
 import datetime
+import simple_plotter
 from keras.models import load_model
 from IPython import embed
 plot.switch_backend('agg')
@@ -135,6 +135,18 @@ def main(argv):
     sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
     doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
+    print("#### Saving DOA and SED GT Values ####")
+    f = open("models/doa_gt.txt", "w+")
+    for elem in doa_gt:
+      f.write(str(list(elem)) + "\n")
+    f.close()
+
+    f = open("models/sed_gt.txt", "w+")
+    for elem in sed_gt:
+      f.write(str(elem)+"\n")
+    f.close()
+    print("######################################")
+
     print(
         'MODEL:\n'
         '\tdropout_rate: {}\n'
@@ -183,6 +195,18 @@ def main(argv):
     if params['mode'] == 'regr':
         sed_pred = np.array(evaluation_metrics.reshape_3Dto2D(pred[0])) > .5
         doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
+        
+        print("#### Saving DOA and SED Pred Values ####")
+        f = open("models/doa_pred.txt", "w+")
+        for elem in doa_pred:
+          f.write(str(list(elem)) + "\n")
+        f.close()
+
+        f = open("models/sed_pred.txt", "w+")
+        for elem in sed_pred:
+          f.write(str(elem)+"\n")
+        f.close()
+        print("########################################")
 
         # Computing confidence intervals
         sed_err = sed_gt - sed_pred
@@ -238,8 +262,6 @@ def main(argv):
                       doa_conf_up, sed_conf_low, 
                       sed_median, sed_conf_up]
         
-
-        plotter_saver.save_array_to_csv("{}_plot.csv".format(unique_name), plot_array)
         
         print('epoch_cnt: %d, time: %.2fs, tr_loss: %.4f, val_loss: %.4f, '
             'F1_overall: %.2f, ER_overall: %.2f, '
@@ -253,6 +275,7 @@ def main(argv):
             )
         )
     
+    simple_plotter.plot_3d("models/doa_gt.txt", "models/doa_pred.txt", 0, 11, 200)
     #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, epoch_cnt)
 
 if __name__ == "__main__":

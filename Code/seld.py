@@ -12,7 +12,7 @@ import keras_model
 import parameter
 import utils
 import time
-import plotter_saver
+import simple_plotter
 import datetime
 from keras.models import load_model
 from IPython import embed
@@ -285,7 +285,7 @@ def main(argv):
         patience_cnt += 1
 
         # model.save_weights('{}_model.ckpt'.format(unique_name))
-        plotter_saver.save_array_to_csv("{}_plot.csv".format(unique_name), plot_array)
+        simple_plotter.save_array_to_csv("{}_plot.csv".format(unique_name), plot_array)
         print("##### Model and metrics saved! #####")
 
         if seld_score[epoch_cnt] < best_metric:
