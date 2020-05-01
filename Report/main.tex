@@ -79,14 +79,9 @@ Our main work consisted in adapting the provided code to the new dataset, fine-t
 \newpage
 \section{Dataset}\label{cha:data}
 
-The network is trained with the \textbf{TAU Spatial Sound Events 2019} dataset which provides four-channel directional microphone recordings of stationary point sources.
-
-\noindent
-It is a balanced dataset, it indeed consists of eleven classes, each with twenty examples that were randomly split into five sets with an equal number of examples for each class, in addition, it was divided into four cross-validation split.
-
-\noindent
-The maximum number of simultaneously overlapping sources are two.\\
-Moreover, in order to improve the performance over new sound events, and to make a more realistic scenario, natural ambient noise collected in the recording locations was added to the synthesized recordings in the dataset such that the average SNR of the sound events was 30 dB.
+The network is trained with the \textbf{TAU Spatial Sound Events 2019 - Ambisonics} dataset which provides four-channel directional microphone array recordings of stationary point sources, with a maximum number of simultaneously overlapping sources equal to 2.\\
+It is a balanced dataset, it indeed consists of 11 classes, each with 20 examples randomly split into 5 sets with an equal number of examples for each class. The recordings are synthesized through the collected spatial location impulse responses, at 504 unique combinations of azimuth, elevation and distance triplets.\\
+Moreover, in order to improve the performance over new sound events, and to make scenarios more realistic, natural ambient noise collected in the recording locations is added to the synthesized recordings in the dataset.
 \newline
 \begin{table}[ht]
 	\caption{TAU Spatial Sound Events Classes}
@@ -110,6 +105,25 @@ Moreover, in order to improve the performance over new sound events, and to make
 	\end{tabular}
 	\label{table:classes}
 \end{table}
+
+\subsection{Specifications}
+
+The impulse responses obtained in the STFT domain are collected at every $10^\circ$ azimuth angle for 9 different elevation from $-40^\circ$ to $40^\circ$ at 1 meter distance, at first. Then, at every $10^\circ$ azimuth angle for 5 different elevation from $-20^\circ$ to $20^\circ$ at 2 m distance.\\
+These impulse responses are recorded in 5 different scenarios (indoor locations) which clearly have different reverberant properties, however, the official specifications do not actually provide them. The 5 scenarios involved are as follows:
+\begin{itemize}
+	\item Large common area with multiple seating tables and carpet flooring. People chatting and working.
+	\item Large cafeteria with multiple seating tables and carpet flooring. People chatting and having food.
+	\item High ceiling corridor with hard flooring. People walking around and chatting.
+	\item Corridor with classrooms around and hard flooring. People walking around and chatting.
+	\item Large corridor with multiple sofas and tables, hard and carpet flooring at different parts. People walking around and chatting.
+\end{itemize}
+
+\noindent
+The 11 classes comprise 20 examples each, which are split into 5 k-fold splits, four are used for synthesizing the development data set, while the remaining on is used for the evaluation data set. It is divided into four cross-validation split in the development set, which is therefore composed of 400 (100 for each split), one-minute long recordings sampled at 48 kHz, while the evaluation set consists of 100, one-minute long recordings. Each of the recording in these splits is generated randomly. The impulse responses are used from a single location for each sound events in a recording. Moreover, half of the recordings are synthesized with up to 2 temporally overlapping sound events while the others with no overlapping ones. Finally, as already mentioned, the ambient noise collected at the respective location's impulse response is added such that the average SNR is 30 dB for all the sound events.\\
+Since the recordings are collected through a microphone array the Ambisonic data set is then obtained by converting the 32 channel microphone signals to First Order Ambisonic ones, by means of encoding filtered based on anechoic measurements of the microphone array response.
+
+\noindent
+Summarizing, there are 100 recordings for each split of the dataset, each of them is composed of 10 recordings with up to 2, or no temporally overlapping sound events, synthesized from 5 locations, namely 20 recordings for each location, 10 with overlapping sound events and 10 without. The dataset provided only guarantees a balanced distribution of sound events in each of the azimuth and elevation possible angles, but there's no guarantee about the distribution of locations' impulse responses.
 
 \newpage
 \section{Architecture}\label{cha:arch}
@@ -234,6 +248,31 @@ Recapping, this is an overview of the introduced and changed files:
 \section{Results}\label{cha:res}
 
 The First Order Ambisonics data set we are going to use is divided into four different splits. We decided to use splits 3 and 4 for the training process, split 2 for the validation and split 1 for a final test. In order to obtain substantial results we trained the model for 100 epochs with a \textit{batch\_size} equal to 16 using \textit{Tesla K80} GPU from Google Colab.
+
+\noindent
+As suggested by the dataset documentation, for keeping a certain uniformity in the results, the folds for the k-fold validation procedure are standardized. The four sets proposed are composed of training, validation and testing split. 
+Since the dataset is split into four parts, there is no consideration about the five rooms in which the audio files are recorded. 
+To recover information about how the network performs in the various situations presented, the test phase will be performed separately for every room, resulting in five different outcomes.
+
+    
+
+\begin{table}[h]
+\caption{Proposed splits for the k-fold procedure.}
+\centering
+\begin{tabular}{l|lll}
+
+Folds  & \multicolumn{1}{l|}{Training splits} & \multicolumn{1}{l|}{Validation split} & Testing split \\ \hline
+
+Fold 1 & 3,4                                  & 2                                     & 1             \\
+
+Fold 2 & 4,1                                  & 3                                     & 2             \\
+
+Fold 3 & 1,2                                  & 4                                     & 3             \\
+ 
+Fold 4 & 2,3                                  & 1                                     & 4            
+\end{tabular}
+\end{table}
+
 
 \noindent
 Initially, we were obtaing results with a really low accuracy even after plenty of epochs. This was caused by a Keras bug related to the use of \textit{fit\_generator()} and \textit{predict\_generator()} functions. However, we managed to solve this as explained in training part (\ref{minisec:train}). 
