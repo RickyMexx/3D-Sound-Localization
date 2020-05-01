@@ -135,6 +135,12 @@ def simple_plotter(csv_file, columns, img_name):
     plt.cla()
     return
 
+def plot_confidence(x, y, z, name):
+    fig, ax = plt.subplots()
+    ax.set_title('Confidence interval ' + name)
+    ax.boxplot(x + y + z, 0, sym='')
+    fig.savefig(plots_folder + 'confidence_int_' + name + '.png')
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

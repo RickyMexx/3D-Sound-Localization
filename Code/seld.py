@@ -19,7 +19,7 @@ from IPython import embed
 
 plot.switch_backend('agg')
 
-from evaluation_metrics import compute_confidence
+from evaluation_metrics import compute_confidence, compute_doa_confidence
 
 
 def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
@@ -129,11 +129,13 @@ def main(argv):
         dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
         nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-        weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
+        weakness=params['weakness'], datagen_mode='validation', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
         azi_only=params['azi_only'], shuffle=False
     )
 
     data_in, data_out = data_gen_train.get_data_sizes()
+    #n_classes = data_out[0][2]
+
     print(
         'FEATURES:\n'
         '\tdata_in: {}\n'
@@ -228,7 +230,8 @@ def main(argv):
             sed_pred = np.array(evaluation_metrics.reshape_3Dto2D(pred[0])) > .5
             doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
-            ''' Computing confidence intervals '''
+            # Old confidence intervals
+            '''
             sed_err = sed_gt - sed_pred
             [sed_conf_low, sed_conf_up, sed_median] = compute_confidence(sed_err)
             # print("Condidence Interval for SED error is [" + str(sed_conf_low) + ", " + str(sed_conf_up) + "]")
@@ -245,7 +248,7 @@ def main(argv):
             print("\tMedian is %.5f" % (doa_median))
             # print("Displacement: +/- " + str(doa_conf_up - doa_median))
             print("\tDisplacement: +/- %.5f" % (doa_conf_up - doa_median))
-            ''' ------------------------------ '''
+            '''
 
             sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
                                                                            data_gen_test.nb_frames_1s())
@@ -265,6 +268,14 @@ def main(argv):
                 plot.imshow(conf_mat, cmap='binary', interpolation='None')
                 plot.savefig('models/confusion_matrix.jpg')
 
+        # New confidence computation, differing doa and sed errors
+        sed_err = sed_loss[epoch_cnt, 0]
+        [sed_conf_low, sed_conf_up] = compute_confidence(sed_err, sed_pred.shape[0])
+        print("Confidence Interval for SED error is [ %f, %f ]" % (sed_conf_low, sed_conf_up))
+
+        #doa_err = doa_gt - doa_pred
+        #[x_err, y_err, z_err] = compute_doa_confidence(doa_err, n_classes)
+
         plot_array = [tr_loss[epoch_cnt],  # 0
                       val_loss[epoch_cnt],  # 1
                       sed_loss[epoch_cnt][0],  # 2    er
@@ -278,14 +289,16 @@ def main(argv):
                       sed_score[epoch_cnt],  # 10
                       doa_score[epoch_cnt],
                       seld_score[epoch_cnt],
-                      doa_conf_low, doa_median,
-                      doa_conf_up, sed_conf_low,
-                      sed_median, sed_conf_up]
+                      #doa_conf_low, doa_median,
+                      #doa_conf_up, sed_conf_low,
+                      #sed_median, sed_conf_up]
+                      sed_conf_low, sed_conf_up]
 
         patience_cnt += 1
 
         # model.save_weights('{}_model.ckpt'.format(unique_name))
         simple_plotter.save_array_to_csv("{}_plot.csv".format(unique_name), plot_array)
+        #simple_plotter.plot_confidence(x_err, y_err, z_err, "ov")
         print("##### Model and metrics saved! #####")
 
         if seld_score[epoch_cnt] < best_metric:

@@ -13,7 +13,7 @@ import parameter
 
 class DataGenerator(object):
     def __init__(
-            self, datagen_mode='train', dataset='resim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
+            self, datagen_mode='train', dataset='resim', ov=1, ov_num=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
             azi_only=False
     ):
@@ -23,6 +23,7 @@ class DataGenerator(object):
         self._seq_len = seq_len
         self._shuffle = shuffle
         self._split = split;
+        self._ov_num = ov_num;
         self._feat_cls = cls_feature_class.FeatureClass(dataset=dataset, ov=ov, split=split, db=db, nfft=nfft)
         self._label_dir = self._feat_cls.get_label_dir(classifier_mode, weakness, extra_name)
         self._feat_dir = self._feat_cls.get_normalized_feat_dir(extra_name)
@@ -95,12 +96,17 @@ class DataGenerator(object):
                 for split_n in _params["train_split"]:
                     if "split"+str(split_n) in filename:
                         self._filenames_list.append(filename)
-                        print("TRAIN " + str(cnt_train)+": "+filename)
+                        print("TRAIN " + str(cnt_train) + ": "+filename)
                         cnt_train = cnt_train+1
-            else:
+            elif self._datagen_mode == "validation":
                 if "split"+str(self._split) in filename:
                     self._filenames_list.append(filename)
-                    print("TEST " + str(cnt_test)+": "+filename)
+                    print("VALID " + str(cnt_test) + ": "+filename)
+                    cnt_test = cnt_test+1
+            else:
+                if ("split"+str(self._split) in filename) and ("ov"+str(self._ov_num) in filename):
+                    self._filenames_list.append(filename)
+                    print("TEST " + str(cnt_test) + ": "+filename)
                     cnt_test = cnt_test+1
 
 

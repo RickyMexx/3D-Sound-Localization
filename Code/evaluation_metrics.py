@@ -276,7 +276,8 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
     er_metric = [avg_accuracy, doa_loss_gt, doa_loss_pred, doa_loss_gt_cnt, doa_loss_pred_cnt, good_frame_cnt]
     return er_metric, conf_mat
 
-
+# Old implemenation of confidence
+''' 
 def compute_confidence(data):
     # bootstrap
     length = len(data)
@@ -307,3 +308,29 @@ def compute_confidence(data):
     #print('%.1fth percentile = %.3f' % (upper_p, upper))
 
     return [lower, upper, median(scores)]
+'''
+
+# Updated version, using classic formula
+def compute_confidence(metric, size):
+    displacement = 1.96 * np.sqrt(((metric) * (1 - metric)) / size)
+    return [metric-displacement, metric+displacement]
+
+# Specific confidence computation for cartesian coordinates
+def compute_doa_confidence(err, n_classes):
+    # Computing doa error on x axis
+    doa_err_x = np.reshape(err, newshape=(err.shape[0], n_classes, 3))
+    doa_err_x = np.absolute(doa_err_x[:, :, 0])
+    doa_err_x = np.reshape(doa_err_x, newshape=(doa_err_x.shape[0] * doa_err_x.shape[1]))
+
+    # Computing doa error on y axis
+    doa_err_y = np.reshape(err, newshape=(err.shape[0], n_classes, 3))
+    doa_err_y = np.absolute(doa_err_y[:, :, 1])
+    doa_err_y = np.reshape(doa_err_y, newshape=(doa_err_y.shape[0] * doa_err_y.shape[1]))
+
+    # Computing doa error on y axis
+    doa_err_z = np.reshape(err, newshape=(err.shape[0], n_classes, 3))
+    doa_err_z = np.absolute(doa_err_z[:, :, 2])
+    doa_err_z = np.reshape(doa_err_z, newshape=(doa_err_z.shape[0] * doa_err_z.shape[1]))
+
+    return [doa_err_x, doa_err_y, doa_err_z]
+

@@ -18,7 +18,7 @@ from keras.models import load_model
 from IPython import embed
 plot.switch_backend('agg')
 
-from evaluation_metrics import compute_confidence
+from evaluation_metrics import compute_confidence, compute_doa_confidence
 
 
 def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
@@ -114,169 +114,166 @@ def main(argv):
     unique_name = os.path.join(model_dir, unique_name)
     print("unique_name: {}\n".format(unique_name))
 
+    # Cycling over overlaps
+    for ov in range(1, params['overlap']+1):
 
-    data_gen_test = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['test_split'], db=params['db'], nfft=params['nfft'],
-        batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-        weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], shuffle=False
-    )
-
-    data_in, data_out = data_gen_test.get_data_sizes()
-    print(
-        'FEATURES:\n'
-        '\tdata_in: {}\n'
-        '\tdata_out: {}\n'.format(
-            data_in, data_out
+        data_gen_test = cls_data_generator.DataGenerator(
+            dataset=params['dataset'], ov=params['overlap'], ov_num=ov, split=params['test_split'], db=params['db'], nfft=params['nfft'],
+            batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
+            weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
+            azi_only=params['azi_only'], shuffle=False
         )
-    )
-    
-    gt = collect_test_labels(data_gen_test, data_out, params['mode'], params['quick_test'])
-    sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
-    doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
-    print("#### Saving DOA and SED GT Values ####")
-    f = open("models/doa_gt.txt", "w+")
-    for elem in doa_gt:
-      f.write(str(list(elem)) + "\n")
-    f.close()
+        data_in, data_out = data_gen_test.get_data_sizes()
+        n_classes = data_out[0][2]
 
-    f = open("models/sed_gt.txt", "w+")
-    for elem in sed_gt:
-      f.write(str(elem)+"\n")
-    f.close()
-    print("######################################")
-
-    print(
-        'MODEL:\n'
-        '\tdropout_rate: {}\n'
-        '\tCNN: nb_cnn_filt: {}, pool_size{}\n'
-        '\trnn_size: {}, fnn_size: {}\n'.format(
-            params['dropout_rate'],
-            params['nb_cnn3d_filt'] if params['cnn_3d'] else params['nb_cnn2d_filt'], params['pool_size'],
-            params['rnn_size'], params['fnn_size']
+        print(
+            'FEATURES:\n'
+            '\tdata_in: {}\n'
+            '\tdata_out: {}\n'.format(
+                data_in, data_out
+            )
         )
-    )
 
-    model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
-                    nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
-                    rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                    classification_mode=params['mode'], weights=params['loss_weights'], summary=False)
+        gt = collect_test_labels(data_gen_test, data_out, params['mode'], params['quick_test'])
+        sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
+        doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
-    if(os.path.exists('{}_model.ckpt'.format(unique_name))):
-        print("Model found!")
-        model.load_weights('{}_model.ckpt'.format(unique_name))
-        for i in range(10):
-            print("###")
-
-
-    sed_score=np.zeros(params['nb_epochs'])
-    doa_score=np.zeros(params['nb_epochs'])
-    seld_score = np.zeros(params['nb_epochs'])
-    tr_loss = np.zeros(params['nb_epochs'])
-    val_loss = np.zeros(params['nb_epochs'])
-    doa_loss = np.zeros((params['nb_epochs'], 6))
-    sed_loss = np.zeros((params['nb_epochs'], 2))
-
-    epoch_cnt = 0
-    start = time.time()
-
-    print("#### Prediction on validation split ####")
-    pred = model.predict_generator(
-        generator=data_gen_test.generate(),
-        steps=params['quick_test_steps'] if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
-        use_multiprocessing=False,
-        workers=1,
-        verbose=1,
-    )
-    print("##########################")
-    #print("pred:", pred[1].shape)
-
-    if params['mode'] == 'regr':
-        sed_pred = np.array(evaluation_metrics.reshape_3Dto2D(pred[0])) > .5
-        doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
-        
-        print("#### Saving DOA and SED Pred Values ####")
-        f = open("models/doa_pred.txt", "w+")
-        for elem in doa_pred:
+        print("#### Saving DOA and SED GT Values ####")
+        f = open("models/doa_gt.txt", "w+")
+        for elem in doa_gt:
           f.write(str(list(elem)) + "\n")
         f.close()
 
-        f = open("models/sed_pred.txt", "w+")
-        for elem in sed_pred:
+        f = open("models/sed_gt.txt", "w+")
+        for elem in sed_gt:
           f.write(str(elem)+"\n")
         f.close()
-        print("########################################")
+        print("######################################")
 
-        # Computing confidence intervals
-        sed_err = sed_gt - sed_pred
-        [sed_conf_low, sed_conf_up, sed_median] = compute_confidence(sed_err)
-        # print("Condidence Interval for SED error is [" + str(sed_conf_low) + ", " + str(sed_conf_up) + "]")
-        print("Confidence Interval for SED error is [ %f, %f ]" % (sed_conf_low, sed_conf_up))
-        # print("\tMedian is " + str(sed_median))
-        print("\tMedian is %f" % (sed_median))
-        # print("\tDisplacement: +/- " + str(sed_conf_up - sed_median))
-        print("\tDisplacement: +/- %f" % (sed_conf_up - sed_median))
-        doa_err = doa_gt - doa_pred
-        [doa_conf_low, doa_conf_up, doa_median] = compute_confidence(doa_err)
-        # print("Condidence Interval for DOA is [" + str(doa_conf_low) + ", " + str(doa_conf_up) + "]")
-        print("Confidence Interval for DOA is [ %f, %f ]" % (doa_conf_low, doa_conf_up))
-        # print("Median is " + str(doa_median))
-        print("\tMedian is %f" % (doa_median))
-        # print("Displacement: +/- " + str(doa_conf_up - doa_median))
-        print("\tDisplacement: +/- %f" % (doa_conf_up - doa_median))
-        # ------------------------------
-
-        sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
-        if params['azi_only']:
-            doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
-                                                                                             sed_pred, sed_gt)
-        else:
-            doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
-                                                                                              sed_pred, sed_gt)
-
-        sed_score[epoch_cnt] = np.mean([sed_loss[epoch_cnt, 0], 1 - sed_loss[epoch_cnt, 1]])
-        doa_score[epoch_cnt] = np.mean([2 * np.arcsin(doa_loss[epoch_cnt, 1] / 2.0) / np.pi,
-                                        1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
-        seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt]) / 2
-
-        if os.path.isdir('./models'):
-            plot.imshow(conf_mat, cmap='binary', interpolation='None')
-            plot.savefig('models/confusion_matrix.jpg')
-
-
-        plot_array = [tr_loss[epoch_cnt],     #0
-                      val_loss[epoch_cnt],    #1 
-                      sed_loss[epoch_cnt][0], #2    er
-                      sed_loss[epoch_cnt][1], #3    f1
-                      doa_loss[epoch_cnt][0], #4    avg_accuracy
-                      doa_loss[epoch_cnt][1], #5    doa_loss_gt
-                      doa_loss[epoch_cnt][2], #6    doa_loss_pred
-                      doa_loss[epoch_cnt][3], #7    doa_loss_gt_cnt
-                      doa_loss[epoch_cnt][4], #8    doa_loss_pred_cnt
-                      doa_loss[epoch_cnt][5], #9    good_frame_cnt
-                      sed_score[epoch_cnt],   #10
-                      doa_score[epoch_cnt], 
-                      seld_score[epoch_cnt], 
-                      doa_conf_low, doa_median, 
-                      doa_conf_up, sed_conf_low, 
-                      sed_median, sed_conf_up]
-        
-        
-        print('epoch_cnt: %d, time: %.2fs, tr_loss: %.4f, val_loss: %.4f, '
-            'F1_overall: %.2f, ER_overall: %.2f, '
-            'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-            'sed_score: %.4f, doa_score: %.4f, seld_score: %.4f' %
-            (
-                epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
-                sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
-                doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-                sed_score[epoch_cnt], doa_score[epoch_cnt], seld_score[epoch_cnt]
+        print(
+            'MODEL:\n'
+            '\tdropout_rate: {}\n'
+            '\tCNN: nb_cnn_filt: {}, pool_size{}\n'
+            '\trnn_size: {}, fnn_size: {}\n'.format(
+                params['dropout_rate'],
+                params['nb_cnn3d_filt'] if params['cnn_3d'] else params['nb_cnn2d_filt'], params['pool_size'],
+                params['rnn_size'], params['fnn_size']
             )
         )
-    
-    simple_plotter.plot_3d("models/doa_gt.txt", "models/doa_pred.txt", 0, 11, 200)
-    #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, epoch_cnt)
+
+        model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
+                        nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
+                        rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
+                        classification_mode=params['mode'], weights=params['loss_weights'], summary=False)
+
+        if(os.path.exists('{}_model.ckpt'.format(unique_name))):
+            print("Model found!")
+            model.load_weights('{}_model.ckpt'.format(unique_name))
+            for i in range(10):
+                print("###")
+
+        sed_score = np.zeros(params['nb_epochs'])
+        doa_score = np.zeros(params['nb_epochs'])
+        seld_score = np.zeros(params['nb_epochs'])
+        tr_loss = np.zeros(params['nb_epochs'])
+        val_loss = np.zeros(params['nb_epochs'])
+        doa_loss = np.zeros((params['nb_epochs'], 6))
+        sed_loss = np.zeros((params['nb_epochs'], 2))
+
+        epoch_cnt = 0
+        start = time.time()
+
+        print("#### Prediction on validation split ####")
+        pred = model.predict_generator(
+            generator=data_gen_test.generate(),
+            steps=params['quick_test_steps'] if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+            use_multiprocessing=False,
+            workers=1,
+            verbose=1,
+        )
+        print("##########################")
+        #print("pred:", pred[1].shape)
+
+        if params['mode'] == 'regr':
+            sed_pred = np.array(evaluation_metrics.reshape_3Dto2D(pred[0])) > .5
+            doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
+
+            print("#### Saving DOA and SED Pred Values ####")
+            f = open("models/doa_pred.txt", "w+")
+            for elem in doa_pred:
+              f.write(str(list(elem)) + "\n")
+            f.close()
+
+            f = open("models/sed_pred.txt", "w+")
+            for elem in sed_pred:
+              f.write(str(elem)+"\n")
+            f.close()
+            print("########################################")
+
+            # Old version of confidence intervals
+            '''
+            # Computing confidence intervals
+            sed_err = sed_gt - sed_pred
+            [sed_conf_low, sed_conf_up, sed_median] = compute_confidence(sed_err)
+            # print("Condidence Interval for SED error is [" + str(sed_conf_low) + ", " + str(sed_conf_up) + "]")
+            print("Confidence Interval for SED error is [ %f, %f ]" % (sed_conf_low, sed_conf_up))
+            # print("\tMedian is " + str(sed_median))
+            print("\tMedian is %f" % (sed_median))
+            # print("\tDisplacement: +/- " + str(sed_conf_up - sed_median))
+            print("\tDisplacement: +/- %f" % (sed_conf_up - sed_median))
+            doa_err = doa_gt - doa_pred
+            [doa_conf_low, doa_conf_up, doa_median] = compute_confidence(doa_err)
+            # print("Condidence Interval for DOA is [" + str(doa_conf_low) + ", " + str(doa_conf_up) + "]")
+            print("Confidence Interval for DOA is [ %f, %f ]" % (doa_conf_low, doa_conf_up))
+            # print("Median is " + str(doa_median))
+            print("\tMedian is %f" % (doa_median))
+            # print("Displacement: +/- " + str(doa_conf_up - doa_median))
+            print("\tDisplacement: +/- %f" % (doa_conf_up - doa_median))
+            # ------------------------------
+            '''
+
+            sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
+            if params['azi_only']:
+                doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
+                                                                                                 sed_pred, sed_gt)
+            else:
+                doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
+                                                                                                  sed_pred, sed_gt)
+
+            sed_score[epoch_cnt] = np.mean([sed_loss[epoch_cnt, 0], 1 - sed_loss[epoch_cnt, 1]])
+            doa_score[epoch_cnt] = np.mean([2 * np.arcsin(doa_loss[epoch_cnt, 1] / 2.0) / np.pi,
+                                            1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))])
+            seld_score[epoch_cnt] = (sed_score[epoch_cnt] + doa_score[epoch_cnt]) / 2
+
+            if os.path.isdir('./models'):
+                plot.imshow(conf_mat, cmap='binary', interpolation='None')
+                plot.savefig('models/confusion_matrix.jpg')
+
+            # New confidence computation, differing doa and sed errors
+            sed_err = sed_loss[epoch_cnt, 0]
+            [sed_conf_low, sed_conf_up] = compute_confidence(sed_err, sed_pred.shape[0])
+            print("Confidence Interval for SED error is [ %f, %f ]" % (sed_conf_low, sed_conf_up))
+
+            doa_err = doa_gt - doa_pred
+            [x_err, y_err, z_err] = compute_doa_confidence(doa_err, n_classes)
+
+
+            print('epoch_cnt: %d, time: %.2fs, tr_loss: %.4f, val_loss: %.4f, '
+                'F1_overall: %.2f, ER_overall: %.2f, '
+                'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
+                'sed_score: %.4f, doa_score: %.4f, seld_score: %.4f' %
+                (
+                    epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
+                    sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
+                    doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
+                    sed_score[epoch_cnt], doa_score[epoch_cnt], seld_score[epoch_cnt]
+                )
+            )
+
+        simple_plotter.plot_3d("models/doa_gt.txt", "models/doa_pred.txt", 0, 11, 200)
+        simple_plotter.plot_confidence(x_err, y_err, z_err, "ov"+str(ov))
+        #plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, sed_score, doa_score, epoch_cnt)
 
 if __name__ == "__main__":
     try:
