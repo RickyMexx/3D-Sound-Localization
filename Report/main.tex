@@ -13,6 +13,7 @@
 
 
 \usepackage{graphicx}
+\usepackage{subfig}
 
 \graphicspath{{./img/}}
 
@@ -28,9 +29,10 @@
 \usepackage{float}
 \usepackage{hyperref}
 \usepackage{listings}
+\usepackage{multirow}
 
 \usepackage{caption}
-
+\usepackage{array}
 
 
 \usepackage{wrapfig}
@@ -41,13 +43,13 @@
 \usepackage{ragged2e}
 
 
-
 \usepackage{indentfirst}
 
 \setlength{\parindent}{2em}
 \setlength{\parskip}{1em}
 
-
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.4}
 
 
 \begin{document}
@@ -58,9 +60,9 @@
 
 \vspace{10px}
 
-\openup -1.5ex
+\openup -2.5ex
 \tableofcontents
-\openup 1.5ex
+\openup 2.5ex
 
 \newpage
 \section{Introduction}\label{cha:intro}
@@ -198,9 +200,9 @@ After the extraction has been done we will deal with three new different folders
 After the process of features extraction is completed we can proceed with the training. Unlike for the extraction, in this phase we introduced some changes to both manage foa data sets and old ones instead of adding a completely new \textit{seld.py}. In particular, we highlight differences on:
 
 \begin{itemize}
-	\item \textit{cls\_data\_generator.py}: new split handler system, in \textit{\_get\_label\_filenames\_sizes()} we added support for train and validation$/$test splits which has as objective to create a correct file list. All the files are now taken according to \textit{parameter.py} settings, which specify the number of the splits. Adding check control for circular buffers in generator's \textit{generate()} base function in case pop operations exceed buffer size. 
+	\item \textit{cls\_data\_generator.py}: new split handler system, in \textit{\_get\_label\_filenames\_sizes()} we added support for train and validation$/$test splits which has as objective to create a correct file list, depending also from the new ov number in the constructor. All the files are now taken according to \textit{parameter.py} settings, which specify the number of the splits. Adding check control for circular buffers in generator's \textit{generate()} base function in case pop operations exceed buffer size.
 	\item \textit{seld.py}: new batch and step control for quick tests; changing \textit{unique\_name} for model weights data saving; new smart resumption of training if weights are present in \textit{/model} folder; new important \textbf{bug-solving} procedure to let \textit{predict\_generator()} work correctly, which consists of creating the model, save it and reload it with old weights before a prediction occurs; new confidence interval calculator for DOA and SED errors; adding SELD to the scores and saving all of them in a csv file.
-	\item \textit{evaluation\_metrics.py}: adding \textit{compute\_confidence()} function to compute 95\% confidence interval given an array of data. Implementation based on \cite{confint}.
+	\item \textit{evaluation\_metrics.py}: adding \textit{compute\_confidence()} and\\ \textit{compute\_doa\_confidence()}, functions to compute 95\% confidence interval given an array of data. Implementation based on \cite{confint}.
 	\item \textit{simple\_plotter.py}: new file which can be used for csv saving, metrics 2D plotting and data prediction 3D plotting.
 \end{itemize}
 
@@ -247,18 +249,12 @@ Recapping, this is an overview of the introduced and changed files:
 \newpage
 \section{Results}\label{cha:res}
 
-The First Order Ambisonics data set we are going to use is divided into four different splits. We decided to use splits 3 and 4 for the training process, split 2 for the validation and split 1 for a final test. In order to obtain substantial results we trained the model for 100 epochs with a \textit{batch\_size} equal to 16 using \textit{Tesla K80} GPU from Google Colab.
-
-\noindent
-As suggested by the dataset documentation, for keeping a certain uniformity in the results, the folds for the k-fold validation procedure are standardized. The four sets proposed are composed of training, validation and testing split. 
-Since the dataset is split into four parts, there is no consideration about the five rooms in which the audio files are recorded. 
-To recover information about how the network performs in the various situations presented, the test phase will be performed separately for every room, resulting in five different outcomes.
-
-    
+The First Order Ambisonics data set we are going to use is divided into four different splits. As suggested by the dataset documentation, for keeping a certain uniformity in the results, the folds for the k-fold validation procedure are standardized. The four sets proposed in Table \ref{table:folds} are composed of training, validation and testing split.  
+To recover information about how the network performs in the various situations presented, the test phase will be performed separately for sound overlaps, resulting in two sets of outcomes.
 
 \begin{table}[h]
 \caption{Proposed splits for the k-fold procedure.}
-\centering
+\begin{center}
 \begin{tabular}{l|lll}
 
 Folds  & \multicolumn{1}{l|}{Training splits} & \multicolumn{1}{l|}{Validation split} & Testing split \\ \hline
@@ -271,8 +267,12 @@ Fold 3 & 1,2                                  & 4                               
  
 Fold 4 & 2,3                                  & 1                                     & 4            
 \end{tabular}
+\end{center}
+\label{table:folds}
 \end{table}
 
+\noindent
+We decided to use Fold 1 for the training process, validation and a final test. In order to obtain substantial results we trained the model for 100 epochs with a \textit{batch\_size} equal to 16 using \textit{Tesla K80} GPU from Google Colab.
 
 \noindent
 Initially, we were obtaing results with a really low accuracy even after plenty of epochs. This was caused by a Keras bug related to the use of \textit{fit\_generator()} and \textit{predict\_generator()} functions. However, we managed to solve this as explained in training part (\ref{minisec:train}). 
@@ -327,18 +327,44 @@ $S_{DOA} = 0.31$ \space\space $S_{SED} = 0.25$ \space\space $S_{SELD} = 0.28$
 \end{center}
 
 \noindent
-After a full training we decided then to test the remaining split (1) using the new \textit{seld\_test.py} program. Here we report outcomes evaluated with several evaluation metrics:
-\begin{center}
-\begin{tabular}{cp{0.6\textwidth}}
-$precision = 0.80$ \space\space $recall = 0.68$\\
-$S_{DOA} = 0.24$ \space\space $S_{SED} = 0.29$ \space\space $S_{SELD} = 0.26$\\
-\\
-Error confidence intervals (95\%):\\
-SED: $[0.014039, 0.014361]$, median 0.014179, displacement $\pm$0.000181\\
-DOA: $[0.000000, -0.001624]$, median -0.001689, displacement $\pm$0.000065
+After a full training we decided then to test the remaining split (1) using the new \textit{seld\_test.py} program. We evaluated this split distinguishing overlaps. In fact, the splits, which size is 100, are perfectly balanced, having 50 samples of OV1 and OV2. In Table \ref{table:scores} we report outcomes evaluated with several evaluation metrics.
+\newline
 
+\begin{table}[h]
+\centering
+\caption{Scores obtained during the test.}
+\begin{tabular}{ |P{3cm}||P{3cm}|P{3cm}|  }
+
+ \hline
+ \multicolumn{3}{|c|}{Final outcomes} \\
+ \hline
+ Metric & OV1 & OV2\\
+ \hline
+ precision & 0.78 & 0.83\\
+ recall & 0.78 & 0.62\\
+ $S_{DOA}$ & 0.156 & 0.315\\
+ $S_{SED}$ & 0.219 & 0.329\\
+ $S_{SELD}$ & 0.187 & 0.322\\
+ SED error 95\% confidence interval & [0.216922, 0.221115] & [0.371710, 0.376616]\\
+ \hline
 \end{tabular}
-\end{center}
+\label{table:scores}
+\end{table}
+
+In Fig. \ref{fig:conf_int} we propose also a graphic visualization of 95\% confidence intervals for DOA error. All the 95\% confidence intervals we calculated are relatively small, meaning that there is a small uncertainty.
+
+
+\begin{figure}[!tbp]
+  \centering
+  \subfloat[OV1]{\includegraphics[width=0.5\textwidth]{confidence_int_ov1.png}\label{fig:ov1}}
+  \hfill
+  \subfloat[OV2]{\includegraphics[width=0.5\textwidth]{confidence_int_ov2.png}\label{fig:ov2}}
+  \caption{$DOA_{err}$ 95\% confidence intervals.}
+  \label{fig:conf_int}
+\end{figure}
+
+
+
 
 \newpage
 \noindent
@@ -347,6 +373,9 @@ With the precedent results we decided to introduce a new tool to better visualiz
 \noindent
 In Fig. \ref{fig:plot_doa} there is a first 3D-plot for DOA predictions, which are placed on the left. On the right it's possible to see how ground truth points are affected by the presence of outliers, which are not always well predicted by the model and, by the fact, suffers from. Further observing, it seems that the number of points in the two frames is different: this is just a perception due to the fact that many ground truth points overlap while those on the left are badly predicted.
 
+
+
+\newpage
 \begin{figure}[h!]
 	\centering
 	\hspace*{-2.5cm}
@@ -355,10 +384,6 @@ In Fig. \ref{fig:plot_doa} there is a first 3D-plot for DOA predictions, which a
 	\label{fig:plot_doa}
 \end{figure}
 
-\noindent
-We made then other two plots, Fig. \ref{fig:plot_labels} and Fig. \ref{fig:plot_3labels}, which are the combination of DOA and SED. In the first one all the classes have been plotted to get a total overview and behaviour of the network. The second one refers to 3 classes only to better understand predictions in a smaller set of points.
-
-\newpage
 \begin{figure}[h!]
 	\centering
 	\hspace*{-2.5cm}
@@ -367,6 +392,7 @@ We made then other two plots, Fig. \ref{fig:plot_labels} and Fig. \ref{fig:plot_
 	\label{fig:plot_labels}
 \end{figure}
 
+\newpage
 \begin{figure}[h!]
 	\centering
 	\hspace*{-2.5cm}
@@ -376,13 +402,16 @@ We made then other two plots, Fig. \ref{fig:plot_labels} and Fig. \ref{fig:plot_
 \end{figure}
 
 
+\noindent
+We made then other two plots, Fig. \ref{fig:plot_labels} and Fig. \ref{fig:plot_3labels}, which are the combination of DOA and SED. In the first one all the classes have been plotted to get a total overview and behaviour of the network. The second one refers to 3 classes only to better understand predictions in a smaller set of points.
+
 \newpage
 \section{Conclusion}\label{cha:conc}
 
 Main objective of this work was to let the SELDnet project work with different type of data sets, in particular the First Order Ambisonics TAU Spatial Sound Events 2019. We managed to deal with it starting from three main papers (\cite{paper2020}, \cite{paper2019}, \cite{paper2018}) and understanding how SELDnet works.
 
 \noindent
-We tried not to find the easiest solution but one of the most optimized and better-performing ones. We proceeded with a technical analysis of the code and a training process to allow us to produce valid results. In the second part, we presented different plots of our outcomes to realize and comment out how the network is performing. 
+We tried not to find the easiest solution but one of the most optimized and better-performing ones. We proceeded with a technical analysis of the code and a training process to allow us producing valid results. In the second part, we presented different plots of our outcomes to realize and comment out how the network is performing. 
 
 \noindent
 We consider ourselves satisfied with the results obtained. We didn't deal with a specific study of the network and its architecture but we leave this as future work.
@@ -415,7 +444,7 @@ Topics in Signal Processing, Special Issue on Acoustic S.. 2018.
   \href{https://github.com/sharathadavanne/seld-dcase2019}{Seld-dcase2019} (Link)
   
 \bibitem{confint}
-  \href{https://machinelearningmastery.com/confidence-intervals-for-machine-learning/}{Confidence Intervals for Machine Learning} (Link)
+  \href{https://www.mathsisfun.com/data/confidence-interval.html}{Confidence Intervals} (Link)
 
 \end{thebibliography}
 
