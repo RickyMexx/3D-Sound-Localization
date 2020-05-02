@@ -10,7 +10,16 @@ The objective of our work is to build a working SELDnet based network that works
 
 ![seld3](/Report/img/plot_3labels.jpg)
 
+## Usage
+This project can be easily executed using one of the two proposed notebooks:
+- [Jupyter](/Notebooks/3DSELD-Local.ipynb)
+- [Google Colab](/Notebooks/3DSELD-Colab.ipynb)
+
+The latter gives you the possibility to use a pre-loaded and pre-extracted dataset (~200GB).
+
+
 ## Model metrics CSV table 
+A quick view of our CSV files.
 <table>
 <tr><td>
 
@@ -24,22 +33,19 @@ The objective of our work is to build a working SELDnet based network that works
 | F | doa_loss_gt |
 | G | doa_loss_pred |
 | H | doa_loss_gt_cnt |
-| I | doa_loss_pred_cnt |
-| J | doa_loss_good_frame_cnt |
 
 </td><td>
  
 | - | description |
 | --- | --- |
+| I | doa_loss_pred_cnt |
+| J | doa_loss_good_frame_cnt |
 | K | sed_score |
 | L | doa_score |
 | M | seld_score |
-| N | doa_confidence_interval_low |
-| O | doa_confidence_interval_median |
-| P | doa_confidence_interval__up |
-| Q | sed_confidence_interval_low |
-| R | sed_confidence_interval_median |
-| S | sed_confidence_interval_conf_up |
+| N | sed_confidence_interval_low |
+| O | sed_confidence_interval__up |
+
 
 </td></tr> </table>
 
